@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.16.03
+// @version      2024.01.17.01
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -189,7 +189,7 @@
         tab = helper.createTab(I18n.t(NAME).title);
         tab.addText('txtVersion', 'v' + GM_info.script.version);
         tab.addButton('btnReload', I18n.t(NAME).btnReload, I18n.t(NAME).btnReload, function (event) {
-            this.disabled = true;
+            this.disabled = false;
             loadPolygons();
         });
         // Add container for polygons
@@ -370,7 +370,7 @@
                     drawBorders(polygonsList);
                     populatePolygonsList(polygonsList);
                 } else {
-                    alert(NAME + ": Помилка отримання адресної бази з сервера!");
+                    alert(NAME + ": Помилка отримання адресної бази з сервера або в ця область на міститть інформації про адреси!");
                 }
             }
         }
