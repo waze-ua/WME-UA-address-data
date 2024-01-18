@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.18.01
+// @version      2024.01.18.02
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -55,7 +55,7 @@
             title: 'UA адреси',
             polygons: 'Список полігонів',
             settings: 'Налаштування',
-            btnReload: 'Перезавантажити список',
+            btnReload: 'Завантажити список',
             options: {
                 showLayer: 'Показувати шар з полігонами',
                 showPolygonName: 'Показувати адреси',
@@ -368,9 +368,9 @@
                 if (out.result == "success") {
                     polygonsList = out.data.polygons;
                     drawBorders(polygonsList);
-                    populatePolygonsList(polygonsList);
+//                    populatePolygonsList(polygonsList);
                 } else {
-                    alert(NAME + ": Помилка отримання адресної бази з сервера або в ця область на міститть інформації про адреси!");
+                    alert(NAME + ": Помилка отримання бази з сервера або ця область не містить інформації про адреси!");
                 }
             }
         }
