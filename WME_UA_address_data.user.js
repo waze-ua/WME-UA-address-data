@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.17.01
+// @version      2024.01.18.01
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -70,8 +70,8 @@
         options: {
             showLayer: true,
             showPolygonName: true,
-            loadPolygonsOnStart: true,
-            fillPolygons: false
+            loadPolygonsOnStart: false,
+            fillPolygons: true
         },
         polygons: {}
     };
