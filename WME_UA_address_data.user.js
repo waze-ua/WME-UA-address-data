@@ -270,7 +270,7 @@
         this.strokeWidth = 3;
         this.strokeLinecap = "round"; // [butt | round | square]
         this.strokeDashstyle = "longdash"; // [dot | dash | dashdot | longdash | longdashdot | solid]
-        this.label = WMPSettings.get('options', 'showPolygonName') ? '>'+label : null;
+        this.label = WMPSettings.get('options', 'showPolygonName') ? label : null;
         this.labelOutlineColor = "black";
         this.labelOutlineWidth = 1;
         this.fontSize = 13;
