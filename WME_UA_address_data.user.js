@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.18.05
+// @version      2024.01.18.06
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -270,7 +270,7 @@
         this.strokeWidth = 3;
         this.strokeLinecap = "round"; // [butt | round | square]
         this.strokeDashstyle = "longdash"; // [dot | dash | dashdot | longdash | longdashdot | solid]
-        this.label = WMPSettings.get('options', '>'+'showPolygonName') ? label : null;
+        this.label = WMPSettings.get('options', 'showPolygonName') ? '>'+label : null;
         this.labelOutlineColor = "black";
         this.labelOutlineWidth = 1;
         this.fontSize = 13;
