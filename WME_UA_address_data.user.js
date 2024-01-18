@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.18.03
+// @version      2024.01.18.05
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -91,9 +91,9 @@
     APIHelper.bootstrap();
     APIHelper.addTranslation(NAME, TRANSLATIONS);
     APIHelper.addStyle(
-        '.mapraid-polygons legend { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
-        'div.mapraid-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
-        'div.mapraid-polygons > .controls > fieldset { border: 1px solid #ddd; padding: 4px; }' //+
+        '.address-polygons legend { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
+        'div.address-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
+        'div.address-polygons > .controls > fieldset { border: 1px solid #ddd; padding: 4px; }' //+
     );
 
     let WMPSettings = new Settings(NAME, settings);
@@ -105,7 +105,7 @@
             callback: function (event) {
                 WMPSettings.set(['options', 'showLayer'], event.target.checked);
                 bordersLayer.setVisibility(event.target.checked);
-                document.querySelector('#layer-switcher-item_mapraid_polygons').checked = event.target.checked;
+                document.querySelector('#layer-switcher-item_address_polygons').checked = event.target.checked;
             }
         },
         showPolygonName: {
@@ -158,7 +158,7 @@
     function addPolygonsLayer() {
         bordersLayer = new OpenLayers.Layer.Vector(NAME, {
             displayInLayerSwitcher: true,
-            uniqueName: "MapRaidPolygons",
+            uniqueName: "AddressPolygons",
             visibility: WMPSettings.get('options', 'showLayer')
         });
         W.map.addLayer(bordersLayer);
@@ -169,7 +169,7 @@
         let $ul = $('.collapsible-GROUP_DISPLAY');
         let $li = document.createElement('li');
         let checkbox = document.createElement("wz-checkbox");
-        checkbox.id = 'layer-switcher-item_mapraid_polygons';
+        checkbox.id = 'layer-switcher-item_address_polygons';
         checkbox.type = 'checkbox';
         checkbox.className = "hydrated";
         checkbox.checked = bordersLayer.getVisibility();
@@ -178,7 +178,7 @@
             let newState = !bordersLayer.getVisibility();
             bordersLayer.setVisibility(newState);
             WMPSettings.set(['options', 'showLayer'], newState);
-            document.querySelector('#mapraid-polygons-showLayer').checked = newState;
+            document.querySelector('#address-polygons-showLayer').checked = newState;
         };
         $li.append(checkbox);
         $ul.append($li);
@@ -210,7 +210,7 @@
     }
 
     function populatePolygonsList(data) {
-        let container = document.querySelector('div.mapraid-polygons .controls');
+        let container = document.querySelector('div.address-polygons .controls');
         container.innerHTML = '';
 
         if (data) {
@@ -231,7 +231,7 @@
                 // colorize, separate loop for now
                 data[group].forEach(function (item) {
                     if (item.status == 'active') {
-                        let chkLabel = document.querySelector('label[for="mapraid-polygons-' + item.polygon.hashCode() + '"]');
+                        let chkLabel = document.querySelector('label[for="address-polygons-' + item.polygon.hashCode() + '"]');
                         chkLabel.style['background-color'] = item.color;
                     }
                 });
@@ -270,7 +270,7 @@
         this.strokeWidth = 3;
         this.strokeLinecap = "round"; // [butt | round | square]
         this.strokeDashstyle = "longdash"; // [dot | dash | dashdot | longdash | longdashdot | solid]
-        this.label = WMPSettings.get('options', 'showPolygonName') ? label : null;
+        this.label = WMPSettings.get('options', '>'+'showPolygonName') ? label : null;
         this.labelOutlineColor = "black";
         this.labelOutlineWidth = 1;
         this.fontSize = 13;
@@ -299,16 +299,16 @@
                 if (callback) {
                     callback(res);
                 }
-                document.querySelector('.mapraid-polygons-btnReload').disabled = false;
+                document.querySelector('.address-polygons-btnReload').disabled = false;
             },
             onreadystatechange: function (res) {
             },
             ontimeout: function (res) {
-                document.querySelector('.mapraid-polygons-btnReload').disabled = false;
+                document.querySelector('.address-polygons-btnReload').disabled = false;
                 alert(NAME + ": Вибачте, запит скинуто за часом!");
             },
             onerror: function (res) {
-                document.querySelector('.mapraid-polygons-btnReload').disabled = false;
+                document.querySelector('.address-polygons-btnReload').disabled = false;
                 alert(NAME + ": Вибачте, помилка запиту!");
             }
         });
