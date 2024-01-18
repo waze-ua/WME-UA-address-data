@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.18.07
+// @version      2024.01.18.08
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -47,7 +47,7 @@
             options: {
                 showLayer: 'Show polygons layer',
                 showPolygonName: 'Show addresses',
-                loadPolygonsOnStart: 'Load polygons on start',
+                loadPolygonsOnStart: 'Hide region',
                 fillPolygons: 'Fill polygons with colors 🌈'
             }
         },
@@ -59,7 +59,7 @@
             options: {
                 showLayer: 'Показувати шар з полігонами',
                 showPolygonName: 'Показувати адреси',
-                loadPolygonsOnStart: 'Завантажувати полігони при старті',
+                loadPolygonsOnStart: 'Показувати область в назві',
                 fillPolygons: 'Заливати полігони кольором (красіво 🌈)'
             }
         },
@@ -150,9 +150,9 @@
         addPolygonsLayer();
         addMenuSwitcher();
         addTab();
-        if (WMPSettings.get('options', 'loadPolygonsOnStart')) {
-            loadPolygons();
-        }
+        //        if (WMPSettings.get('options', 'loadPolygonsOnStart')) {
+        //            loadPolygons();
+        //        }
     }
 
     function addPolygonsLayer() {
@@ -270,6 +270,7 @@
         this.strokeWidth = 3;
         this.strokeLinecap = "round"; // [butt | round | square]
         this.strokeDashstyle = "longdash"; // [dot | dash | dashdot | longdash | longdashdot | solid]
+        label = WMPSettings.get('options', 'loadPolygonsOnStart') ? label : label = label.replace(/^\D+\sобл\.(\n)?/, '');
         this.label = WMPSettings.get('options', 'showPolygonName') ? label : null;
         this.labelOutlineColor = "black";
         this.labelOutlineWidth = 1;
@@ -368,7 +369,7 @@
                 if (out.result == "success") {
                     polygonsList = out.data.polygons;
                     drawBorders(polygonsList);
-//                    populatePolygonsList(polygonsList);
+                    //populatePolygonsList(polygonsList);
                 } else {
                     alert(NAME + ": Помилка отримання бази з сервера або ця область не містить інформації про адреси!");
                 }
