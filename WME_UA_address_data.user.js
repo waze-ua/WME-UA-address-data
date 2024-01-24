@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.01.18.08
+// @version      2024.01.25.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik
@@ -251,6 +251,9 @@
                     let feature = parser.read(item.polygon);
 
                     if (feature) {
+
+                        feature.geometry.move(4, 5); // custom offset; TODO move to UI for easier change
+
                         feature.fid = item.polygon.hashCode();
                         feature.style = new borderStyle(item.color, item.name, item.status == 'active' ? true : false);
                         bordersLayer.addFeatures(feature);
