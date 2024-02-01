@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.02.01.001
+// @version      2024.02.01.002
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -96,6 +96,7 @@
   const STYLE = '.address-polygons legend { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
     'div.address-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
     'div.address-polygons > .controls > fieldset { border: 1px solid #ddd; padding: 4px; }' +
+    'div.address-polygons .controls .controls { overflow: scroll; max-height: 100vh; }' +
     'p.address-polygons-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
   WMEUI.addTranslation(NAME, TRANSLATION)
@@ -218,8 +219,8 @@
       button.html().className += ' waze-btn-blue'
 
       // Add container for polygons
-      // this.panel = this.helper.createPanel(I18n.t(this.name).polygons)
-      // this.tab.addElement(this.panel)
+      this.panel = this.helper.createPanel(I18n.t(this.name).polygons)
+      this.tab.addElement(this.panel)
 
       // Add settings section
       let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings)
@@ -260,11 +261,11 @@
 
     populatePolygonsList (data) {
       let container = document.querySelector('div.address-polygons .controls')
-      //container.innerHTML = ''
+      container.innerHTML = ''
 
       if (data) {
         Object.keys(data).forEach((group) => {
-          let fsGroup = this.panel.addFieldset(group)
+          let fsGroup = this.helper.createFieldset(group)
           data[group].forEach((item) => {
             if (item.status === 'active') {
               let hash = item.polygon.hashCode()
@@ -276,16 +277,10 @@
                 this.bordersLayer.redraw()
               }, this.settings.has('polygons', hash) ? this.settings.get('polygons', hash) : true)
 
-              checkbox.attributes.style = {
-                'backgroundColor': item.color
-              }
-
-              this.panel.addElement(checkbox)
+              checkbox.attributes.style = 'background-color:' + item.color
             }
           })
-
-          //this.panel.addElement(fsGroup)
-          //this.panel.inject()
+          container.appendChild(fsGroup.toHTML());
         })
       }
     }
