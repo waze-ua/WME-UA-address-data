@@ -46,8 +46,17 @@
       title: NAME,
       description: 'Shows polygons and addresses on a map in different locations',
       polygons: 'Polygons list',
-      btnReload: 'Reload list',
       settings: 'Settings',
+      buttons: {
+        reload: 'Reload list',
+        control: 'Offset',
+        x: 'Horizontal',
+        y: 'Vertical',
+        up: '↑',
+        down: '↓',
+        left: '←',
+        right: '→',
+      },
       options: {
         showLayer: 'Show polygons layer',
         showPolygonName: 'Show addresses',
@@ -59,8 +68,17 @@
       title: 'UA адреси',
       description: 'Відображення адрес та їх полігонів',
       polygons: 'Список полігонів',
-      btnReload: 'Завантажити список',
       settings: 'Налаштування',
+      buttons: {
+        reload: 'Завантажити список',
+        control: 'Зсув полігонів',
+        x: 'По горизонталі',
+        y: 'По вертикалі',
+        up: '↑',
+        down: '↓',
+        left: '←',
+        right: '→',
+      },
       options: {
         showLayer: 'Показувати шар з полігонами',
         showPolygonName: 'Показувати адреси',
@@ -71,6 +89,10 @@
   }
 
   const SETTINGS = {
+    offset: {
+      x: 4,
+      y: 5,
+    },
     options: {
       showLayer: true,
       showPolygonName: true,
@@ -81,8 +103,11 @@
   }
 
   const STYLE = '.address-polygons legend { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
-    'div.address-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
-    'div.address-polygons > .controls > fieldset { border: 1px solid #ddd; padding: 4px; }' +
+    '.address-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
+    '.address-polygons > .controls > fieldset { border: 1px solid #ddd; padding: 4px; }' +
+    '.address-polygons .address-polygons-offset-x label, .address-polygons .address-polygons-offset-y label { font-weight: 400 }' +
+    '.address-polygons .address-polygons-offset-x label::after { content: attr(data-after); display: inline-block; padding: 2px; margin: 2px; }' +
+    '.address-polygons .address-polygons-offset-y label::after { content: attr(data-after); display: inline-block; padding: 2px; margin: 2px; }' +
     'p.address-polygons-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
   WMEUI.addTranslation(NAME, TRANSLATION)
@@ -166,6 +191,7 @@
     }
 
     setPolygons (polygons) {
+      console.log(`Total ${polygons.Default.length} polygons`)
       this.polygons = polygons
     }
 
@@ -182,10 +208,11 @@
       )
       this.tab.addText('description', I18n.t(this.name).description)
 
-      let button = this.tab.addButton('btnReload', I18n.t(this.name).btnReload, I18n.t(this.name).btnReload, () => {
+      let button = this.tab.addButton('reload', I18n.t(this.name).buttons.reload, I18n.t(this.name).buttons.reload, () => {
         this.disabled = false
         this.loadPolygons()
       })
+
       button.html().className += ' waze-btn-blue'
 
       // Add settings section
@@ -202,11 +229,56 @@
         }
       }
       this.tab.addElement(fsSettings)
+
+      /**
+       * @type {WMEUIHelperControlInput}
+       */
+      let fsKeys = this.helper.createFieldset(I18n.t(this.name).buttons.control)
+
+      let offsetX = fsKeys.addRange(
+        'offset-x',
+        I18n.t(this.name).buttons.x,
+        (event) => {
+          this.settings.set(['offset', 'x'], event.target.value)
+          event.target.nextSibling.setAttribute('data-after', event.target.value)
+          this.drawBorders()
+        },
+        this.settings.get('offset', 'x'),
+        -20,
+        20,
+        0.1
+      )
+      offsetX.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'x'))
+
+      let offsetY = fsKeys.addRange(
+        'offset-y',
+        I18n.t(this.name).buttons.y,
+        (event) => {
+          this.settings.set(['offset', 'y'], event.target.value)
+          event.target.nextSibling.setAttribute('data-after', event.target.value)
+          this.drawBorders()
+        },
+        this.settings.get('offset', 'y'),
+        -20,
+        20,
+        0.1
+      )
+      offsetY.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'y'))
+
+      this.tab.addElement(fsKeys)
+
       this.tab.addText(
         'info',
         '<a href="' + GM_info.scriptUpdateURL + '">' + GM_info.script.name + '</a> ' + GM_info.script.version
       )
       this.tab.inject()
+
+      this.refreshOffset()
+    }
+
+    refreshOffset () {
+      document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'))
+      document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'))
     }
 
     addMenuSwitcher () {
@@ -230,6 +302,7 @@
     }
 
     loadPolygons () {
+      console.log("Load polygons from server")
       const url = 'http://stat.waze.com.ua/address_map/address_map.php'
       sendHTTPRequest(url, (res) => {
         if (validateHTTPResponse(res)) {
@@ -258,9 +331,12 @@
           data[group].forEach((item) => {
             let feature = parser.read(item.polygon)
             if (feature) {
-              feature.geometry.move(4, 5) // custom offset; TODO move to UI for easier change
+              feature.geometry.move(
+                parseFloat(this.settings.get('offset', 'x')),
+                parseFloat(this.settings.get('offset', 'y'))
+              )
               //feature.fid = item.polygon.hashCode()
-              feature.style = new borderStyle(this.settings, item.color, item.name, item.status === 'active')
+              feature.style = new BorderStyle(this.settings, item.color, item.name, item.status === 'active')
               this.getLayer().addFeatures(feature)
             }
           })
@@ -269,7 +345,7 @@
     }
   }
 
-  function borderStyle (settings, color, label, visible = true) {
+  function BorderStyle (settings, color, label, visible = true) {
     this.fill = settings.get('options', 'fillPolygons')
     this.fillColor = color // #ee9900
     this.fillOpacity = 0.4
@@ -279,8 +355,14 @@
     this.strokeWidth = 3
     this.strokeLinecap = 'round' // [butt | round | square]
     this.strokeDashstyle = 'longdash' // [dot | dash | dashdot | longdash | longdashdot | solid]
-    label = settings.get('options', 'loadPolygonsOnStart') ? label : label = label.replace(/^\D+\sобл\.(\n)?/, '')
+
+    if (settings.get('options', 'loadPolygonsOnStart')) {
+      label = label.replace(/^\D+\sобл\.(\n)?/, '')
+      label = label.replace(/^\D+\sр-н(\n)?/, '')
+    }
+
     this.label = settings.get('options', 'showPolygonName') ? label : null
+
     this.labelOutlineColor = 'black'
     this.labelOutlineWidth = 1
     this.fontSize = 13
@@ -307,16 +389,16 @@
         if (callback) {
           callback(res)
         }
-        document.querySelector('.address-polygons-btnReload').disabled = false
+        document.querySelector('.address-polygons-reload').disabled = false
       },
       onreadystatechange: function (res) {
       },
-      ontimeout: function (res) {
-        document.querySelector('.address-polygons-btnReload').disabled = false
+      ontimeout: function () {
+        document.querySelector('.address-polygons-reload').disabled = false
         alert(NAME + ': Вибачте, запит скинуто за часом!')
       },
-      onerror: function (res) {
-        document.querySelector('.address-polygons-btnReload').disabled = false
+      onerror: function () {
+        document.querySelector('.address-polygons-reload').disabled = false
         alert(NAME + ': Вибачте, помилка запиту!')
       }
     })
