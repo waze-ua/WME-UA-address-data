@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.02.01.002
+// @version      2024.02.02.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -35,10 +35,10 @@
 (function () {
   'use strict'
 
+  const requestsTimeout = 10000 // in ms
+
   // Script name, used as unique identifier
   const NAME = 'Address Polygons'
-
-  const requestsTimeout = 10000 // in ms
 
   // Translations
   const TRANSLATION = {
@@ -68,7 +68,6 @@
         fillPolygons: 'Заливати полігони кольором (красіво 🌈)'
       }
     },
-
   }
 
   const SETTINGS = {
@@ -81,22 +80,9 @@
     polygons: {}
   }
 
-  Object.defineProperty(String.prototype, 'hashCode', {
-    value: function () {
-      let hash = 0, i, chr
-      for (i = 0; i < this.length; i++) {
-        chr = this.charCodeAt(i)
-        hash = ((hash << 5) - hash) + chr
-        hash |= 0 // Convert to 32bit integer
-      }
-      return hash
-    }
-  })
-
   const STYLE = '.address-polygons legend { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
     'div.address-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
     'div.address-polygons > .controls > fieldset { border: 1px solid #ddd; padding: 4px; }' +
-    'div.address-polygons .controls .controls { overflow: scroll; max-height: 100vh; }' +
     'p.address-polygons-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
   WMEUI.addTranslation(NAME, TRANSLATION)
@@ -106,13 +92,17 @@
     constructor (name, settings) {
       super(name, settings)
 
+      this.layer = null
+
+      this.polygons = null
+
       this.tabOptions = {
         showLayer: {
           title: I18n.t(this.name).options.showLayer,
           description: I18n.t(this.name).options.showLayer,
           callback: (event) => {
             this.settings.set(['options', 'showLayer'], event.target.checked)
-            this.bordersLayer.setVisibility(event.target.checked)
+            this.getLayer().setVisibility(event.target.checked)
             document.querySelector('#layer-switcher-item_address_polygons').checked = event.target.checked
           }
         },
@@ -121,7 +111,7 @@
           description: I18n.t(this.name).options.showPolygonName,
           callback: (event) => {
             this.settings.set(['options', 'showPolygonName'], event.target.checked)
-            this.drawBorders(this.polygonsList)
+            this.drawBorders()
           }
         },
         loadPolygonsOnStart: {
@@ -136,7 +126,7 @@
           description: I18n.t(this.name).options.fillPolygons,
           callback: (event) => {
             this.settings.set(['options', 'fillPolygons'], event.target.checked)
-            this.drawBorders(this.polygonsList)
+            this.drawBorders()
           }
         }
       }
@@ -144,59 +134,39 @@
 
     init () {
       this.log('init')
-      this.addBorderLayer()
-      this.addMenuSwitcher()
       this.addTab()
+      this.addMenuSwitcher()
     }
 
-    addBorderLayer () {
-      this.bordersLayer = new OpenLayers.Layer.Vector(this.name, {
+    /**
+     * @return {OpenLayers.Layer.Vector}
+     */
+    getLayer () {
+      if (!this.layer) {
+        this.layer = this.createLayer()
+      }
+      return this.layer
+    }
+
+    createLayer () {
+      let layer = new OpenLayers.Layer.Vector(this.name, {
         displayInLayerSwitcher: true,
         uniqueName: 'AddressPolygons',
         visibility: this.settings.get('options', 'showLayer')
       })
-      W.map.addLayer(this.bordersLayer)
+      W.map.addLayer(layer)
+      return layer
     }
 
-    drawBorders (data) {
-      this.bordersLayer.destroyFeatures()
-      if (data) {
-        let parser = new OpenLayers.Format.WKT()
-        parser.internalProjection = W.map.getProjectionObject()
-        parser.externalProjection = new OpenLayers.Projection('EPSG:4326')
-
-        Object.keys(data).forEach((group) => {
-          data[group].forEach((item) => {
-            let feature = parser.read(item.polygon)
-            if (feature) {
-              feature.geometry.move(4, 5) // custom offset; TODO move to UI for easier change
-              feature.fid = item.polygon.hashCode()
-              feature.style = new borderStyle(this.settings, item.color, item.name, item.status === 'active')
-              this.bordersLayer.addFeatures(feature)
-            }
-          })
-        })
-      }
+    /**
+     * @return {[]}
+     */
+    getPolygons () {
+      return this.polygons
     }
 
-    addMenuSwitcher () {
-      // add layer switcher to layer's menu
-      let ul = document.querySelector('.collapsible-GROUP_DISPLAY')
-      let li = document.createElement('li')
-      let checkbox = document.createElement('wz-checkbox')
-          checkbox.id = 'layer-switcher-item_address_polygons'
-          checkbox.type = 'checkbox'
-          checkbox.className = 'hydrated'
-          checkbox.checked = this.bordersLayer.getVisibility()
-          checkbox.appendChild(document.createTextNode(I18n.t(NAME).title))
-          checkbox.onclick = () => {
-            let newState = !this.bordersLayer.getVisibility()
-            this.bordersLayer.setVisibility(newState)
-            this.settings.set(['options', 'showLayer'], newState)
-            document.querySelector('#address-polygons-settings-showLayer').checked = newState
-          }
-      li.append(checkbox)
-      ul.append(li)
+    setPolygons (polygons) {
+      this.polygons = polygons
     }
 
     addTab () {
@@ -217,10 +187,6 @@
         this.loadPolygons()
       })
       button.html().className += ' waze-btn-blue'
-
-      // Add container for polygons
-      this.panel = this.helper.createPanel(I18n.t(this.name).polygons)
-      this.tab.addElement(this.panel)
 
       // Add settings section
       let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings)
@@ -243,15 +209,34 @@
       this.tab.inject()
     }
 
+    addMenuSwitcher () {
+      // add layer switcher to layer's menu
+      let ul = document.querySelector('.collapsible-GROUP_DISPLAY')
+      let li = document.createElement('li')
+      let checkbox = document.createElement('wz-checkbox')
+      checkbox.id = 'layer-switcher-item_address_polygons'
+      checkbox.type = 'checkbox'
+      checkbox.className = 'hydrated'
+      checkbox.checked = this.getLayer().getVisibility()
+      checkbox.appendChild(document.createTextNode(I18n.t(NAME).title))
+      checkbox.onclick = () => {
+        let newState = !this.getLayer().getVisibility()
+        this.getLayer().setVisibility(newState)
+        this.settings.set(['options', 'showLayer'], newState)
+        document.querySelector('#address-polygons-settings-showLayer').checked = newState
+      }
+      li.append(checkbox)
+      ul.append(li)
+    }
+
     loadPolygons () {
       const url = 'http://stat.waze.com.ua/address_map/address_map.php'
       sendHTTPRequest(url, (res) => {
         if (validateHTTPResponse(res)) {
           let out = JSON.parse(res.responseText)
           if (out.result === 'success') {
-            this.polygonsList = out.data.polygons
-            this.drawBorders(this.polygonsList)
-            // this.populatePolygonsList(this.polygonsList)
+            this.setPolygons(out.data.polygons)
+            this.drawBorders()
           } else {
             alert(NAME + ': Помилка отримання бази з сервера або ця область не містить інформації про адреси!')
           }
@@ -259,34 +244,55 @@
       })
     }
 
-    populatePolygonsList (data) {
-      let container = document.querySelector('div.address-polygons .controls')
-      container.innerHTML = ''
+    drawBorders () {
+      this.getLayer().destroyFeatures()
+
+      let data = this.getPolygons()
 
       if (data) {
+        let parser = new OpenLayers.Format.WKT()
+        parser.internalProjection = W.map.getProjectionObject()
+        parser.externalProjection = new OpenLayers.Projection('EPSG:4326')
+
         Object.keys(data).forEach((group) => {
-          let fsGroup = this.helper.createFieldset(group)
           data[group].forEach((item) => {
-            if (item.status === 'active') {
-              let hash = item.polygon.hashCode()
-
-              let checkbox = fsGroup.addCheckbox(hash, item.name, (event) => {
-                let feature = this.bordersLayer.getFeatureByFid(event.target.name)
-                feature.style.display = event.target.checked ? '' : 'none'
-                this.settings.set(['polygons', event.target.name], event.target.checked)
-                this.bordersLayer.redraw()
-              }, this.settings.has('polygons', hash) ? this.settings.get('polygons', hash) : true)
-
-              checkbox.attributes.style = 'background-color:' + item.color
+            let feature = parser.read(item.polygon)
+            if (feature) {
+              feature.geometry.move(4, 5) // custom offset; TODO move to UI for easier change
+              //feature.fid = item.polygon.hashCode()
+              feature.style = new borderStyle(this.settings, item.color, item.name, item.status === 'active')
+              this.getLayer().addFeatures(feature)
             }
           })
-          container.appendChild(fsGroup.toHTML());
         })
       }
     }
   }
 
+  function borderStyle (settings, color, label, visible = true) {
+    this.fill = settings.get('options', 'fillPolygons')
+    this.fillColor = color // #ee9900
+    this.fillOpacity = 0.4
+    this.stroke = true
+    this.strokeColor = color
+    this.strokeOpacity = 1
+    this.strokeWidth = 3
+    this.strokeLinecap = 'round' // [butt | round | square]
+    this.strokeDashstyle = 'longdash' // [dot | dash | dashdot | longdash | longdashdot | solid]
+    label = settings.get('options', 'loadPolygonsOnStart') ? label : label = label.replace(/^\D+\sобл\.(\n)?/, '')
+    this.label = settings.get('options', 'showPolygonName') ? label : null
+    this.labelOutlineColor = 'black'
+    this.labelOutlineWidth = 1
+    this.fontSize = 13
+    // this.fontColor = color;
+    this.fontColor = 'white'
+    this.fontOpacity = 1
+    // this.fontWeight = "bold";
+    this.display = visible ? '' : 'none'
+  }
+
   function sendHTTPRequest (url, callback) {
+    // transform from EPSG:900913 to EPSG:4326
     let urPos = new OpenLayers.LonLat(W.map.getCenter().lon, W.map.getCenter().lat)
       urPos.transform(
         new OpenLayers.Projection('EPSG:900913'),
@@ -362,28 +368,6 @@
     w.document.write(res.responseText)
     w.document.close()
     w.location = res.finalUrl
-  }
-
-  function borderStyle (settings, color, label, visible = true) {
-    this.fill = settings.get('options', 'fillPolygons')
-    this.fillColor = color // #ee9900
-    this.fillOpacity = 0.4
-    this.stroke = true
-    this.strokeColor = color
-    this.strokeOpacity = 1
-    this.strokeWidth = 3
-    this.strokeLinecap = 'round' // [butt | round | square]
-    this.strokeDashstyle = 'longdash' // [dot | dash | dashdot | longdash | longdashdot | solid]
-    label = settings.get('options', 'loadPolygonsOnStart') ? label : label = label.replace(/^\D+\sобл\.(\n)?/, '')
-    this.label = settings.get('options', 'showPolygonName') ? label : null
-    this.labelOutlineColor = 'black'
-    this.labelOutlineWidth = 1
-    this.fontSize = 13
-    // this.fontColor = color;
-    this.fontColor = 'white'
-    this.fontOpacity = 1
-    // this.fontWeight = "bold";
-    this.display = visible ? '' : 'none'
   }
 
   $(document).on('bootstrap.wme', () => {
