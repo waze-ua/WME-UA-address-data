@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.02.02.002
+// @version      2024.02.03.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -60,7 +60,7 @@
       options: {
         showLayer: 'Show polygons layer',
         showPolygonName: 'Show addresses',
-        loadPolygonsOnStart: 'Hide region',
+        showRegionName: 'Show region',
         fillPolygons: 'Fill polygons with colors 🌈'
       }
     },
@@ -82,7 +82,7 @@
       options: {
         showLayer: 'Показувати шар з полігонами',
         showPolygonName: 'Показувати адреси',
-        loadPolygonsOnStart: 'Показувати область в назві',
+        showRegionName: 'Показувати область/р-н в назві',
         fillPolygons: 'Заливати полігони кольором (красіво 🌈)'
       }
     },
@@ -96,7 +96,7 @@
     options: {
       showLayer: true,
       showPolygonName: true,
-      loadPolygonsOnStart: false,
+      showRegionName: false,
       fillPolygons: true
     },
     polygons: {}
@@ -139,11 +139,12 @@
             this.drawBorders()
           }
         },
-        loadPolygonsOnStart: {
-          title: I18n.t(this.name).options.loadPolygonsOnStart,
-          description: I18n.t(this.name).options.loadPolygonsOnStart,
+        showRegionName: {
+          title: I18n.t(this.name).options.showRegionName,
+          description: I18n.t(this.name).options.showRegionName,
           callback: (event) => {
-            this.settings.set(['options', 'loadPolygonsOnStart'], event.target.checked)
+            this.settings.set(['options', 'showRegionName'], event.target.checked)
+            this.drawBorders()
           }
         },
         fillPolygons: {
@@ -356,7 +357,7 @@
     this.strokeLinecap = 'round' // [butt | round | square]
     this.strokeDashstyle = 'longdash' // [dot | dash | dashdot | longdash | longdashdot | solid]
 
-    if (settings.get('options', 'loadPolygonsOnStart')) {
+    if (!settings.get('options', 'showRegionName')) {
       label = label.replace(/^\D+\sобл\.(\n)?/, '')
       label = label.replace(/^\D+\sр-н(\n)?/, '')
     }
