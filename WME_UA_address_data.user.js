@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.02.03.001
+// @version      2024.02.07.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -358,8 +358,9 @@
     this.strokeDashstyle = 'longdash' // [dot | dash | dashdot | longdash | longdashdot | solid]
 
     if (!settings.get('options', 'showRegionName')) {
-      label = label.replace(/^\D+\sобл\.(\n)?/, '')
-      label = label.replace(/^\D+\sр-н(\n)?/, '')
+      let parts = label.split("\n")
+      parts = parts.slice(-2)
+      label = parts.join("\n")
     }
 
     this.label = settings.get('options', 'showPolygonName') ? label : null
