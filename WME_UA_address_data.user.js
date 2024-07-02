@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.02.07.001
+// @version      2024.07.02.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -220,7 +220,7 @@
       let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings)
       let options = this.settings.get('options')
       for (let item in options) {
-        if (options.hasOwnProperty(item)) {
+        if (options.hasOwnProperty(item) && this.tabOptions[item]) {
           fsSettings.addCheckbox(
             'settings-' + item,
             this.tabOptions[item].title,
