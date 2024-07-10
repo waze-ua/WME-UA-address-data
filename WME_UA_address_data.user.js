@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.07.02.001
+// @version      2024.07.10.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -209,10 +209,16 @@
       )
       this.tab.addText('description', I18n.t(this.name).description)
 
-      let button = this.tab.addButton('reload', I18n.t(this.name).buttons.reload, I18n.t(this.name).buttons.reload, () => {
-        this.disabled = false
-        this.loadPolygons()
-      })
+      let button = this.tab.addButton(
+        'reload',
+        I18n.t(this.name).buttons.reload,
+        I18n.t(this.name).buttons.reload,
+        () => {
+          this.disabled = false
+          this.loadPolygons()
+        },
+        'S+81'
+      )
 
       button.html().className += ' waze-btn-blue'
 
