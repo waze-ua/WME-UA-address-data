@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2024.07.10.001
+// @version      2024.08.24.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -420,9 +420,9 @@
       switch (res.status) {
         case 200:
           displayError = false
-          if (res.responseHeaders.match(/content-type: application\/json/i)) {
+          if (res.responseHeaders.match(/content-type:\s?application\/json/i)) {
             result = true
-          } else if (res.responseHeaders.match(/content-type: text\/html/i)) {
+          } else if (res.responseHeaders.match(/content-type:\s?text\/html/i)) {
             displayHtmlPage(res)
           }
           break
