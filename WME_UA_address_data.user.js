@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2025.07.05.001
+// @version      2026.11.04.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -11,10 +11,10 @@
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1619452/WME-Bootstrap.js
-// @require      https://update.greasyfork.org/scripts/452563/1218878/WME.js
-// @require      https://update.greasyfork.org/scripts/450221/1137043/WME-Base.js
-// @require      https://update.greasyfork.org/scripts/450320/1555446/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/450160/1681948/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450221/1681856/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450320/1688694/WME-UI.js
+// @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
 // @updateURL    https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
 // @downloadURL  https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
 // @connect      stat.waze.com.ua
@@ -40,6 +40,19 @@
   // Script name, used as unique identifier
   const NAME = 'Address Polygons'
 
+  const SETTINGS = {
+    offset: {
+      x: 4,
+      y: 5,
+    },
+    options: {
+      showPolygonName: true,
+      showRegionName: false,
+      fillPolygons: true
+    },
+    polygons: {}
+  }
+
   // Translations
   const TRANSLATION = {
     'en': {
@@ -58,7 +71,6 @@
         right: '→',
       },
       options: {
-        showLayer: 'Show polygons layer',
         showPolygonName: 'Show addresses',
         showRegionName: 'Show region',
         fillPolygons: 'Fill polygons with colors 🌈'
@@ -80,7 +92,6 @@
         right: '→',
       },
       options: {
-        showLayer: 'Показувати шар з полігонами',
         showPolygonName: 'Показувати адреси',
         showRegionName: 'Показувати область/р-н в назві',
         fillPolygons: 'Заливати полігони кольором (красіво 🌈)'
@@ -88,19 +99,7 @@
     },
   }
 
-  const SETTINGS = {
-    offset: {
-      x: 4,
-      y: 5,
-    },
-    options: {
-      showLayer: true,
-      showPolygonName: true,
-      showRegionName: false,
-      fillPolygons: true
-    },
-    polygons: {}
-  }
+  WMEUI.addTranslation(NAME, TRANSLATION)
 
   const STYLE = '.address-polygons legend { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
     '.address-polygons > .control-label { font-size: 14px; font-weight: bold; margin: 0px 0px 10px 0px; padding: 10px 0px 0px 0px; }' +
@@ -108,35 +107,78 @@
     '.address-polygons .address-polygons-offset-x label, .address-polygons .address-polygons-offset-y label { font-weight: 400 }' +
     '.address-polygons .address-polygons-offset-x label::after { content: attr(data-after); display: inline-block; padding: 2px; margin: 2px; }' +
     '.address-polygons .address-polygons-offset-y label::after { content: attr(data-after); display: inline-block; padding: 2px; margin: 2px; }' +
-    'p.address-polygons-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
+    'p.address-polygons-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }' +
+    '#sidebar p.address-polygons-blue { background-color:#0057B8;color:white;height:32px;text-align:center;line-height:32px;font-size:24px;margin:0; }' +
+    '#sidebar p.address-polygons-yellow { background-color:#FFDD00;color:black;height:32px;text-align:center;line-height:32px;font-size:24px;margin:0; }'
 
-  WMEUI.addTranslation(NAME, TRANSLATION)
   WMEUI.addStyle(STYLE)
+
+  const layerConfig = {
+    defaultRule: {
+      styleContext: {
+        fill: (context) => {
+          const style = context?.feature?.properties?.style;
+          if (!style)
+            return style;
+          return style?.fill;
+        },
+        label: (context) => {
+          const style = context?.feature?.properties?.style;
+          if (!style)
+            return style;
+          return style?.label;
+        },
+        color: (context) => {
+          const style = context?.feature?.properties?.style;
+          if (!style)
+            return style;
+          return style?.color;
+        },
+      },
+      styleRules: [
+        {
+          predicate: (properties) => properties.styleName === "stylePolygon",
+          style: {
+            fillOpacity: '${fill}',
+            fillColor: '${color}',
+            stroke: true,
+            strokeColor: '${color}',
+            strokeOpacity: 1,
+            strokeWidth: 3,
+            strokeLinecap: 'round', // [butt | round | square]
+            strokeDashstyle: 'longdash',
+            graphicZIndex: 9999,
+            label: "${label}",
+            labelOutlineColor: '#000',
+            labelOutlineWidth: 1,
+            labelAlign: 'cm',
+            fontColor: '#fff',
+            fontSize: '12px',
+            fontFamily: 'Courier New, monospace',
+            // fontWeight: 'bold',
+            labelYOffset: 24,
+          },
+        }
+      ],
+    },
+  };
+
+  let UAAddressDataLayer = false
 
   class UAAddressData extends WMEBase {
     constructor (name, settings) {
       super(name, settings)
-
-      this.layer = null
+      this.initHelper()
 
       this.polygons = null
 
       this.tabOptions = {
-        showLayer: {
-          title: I18n.t(this.name).options.showLayer,
-          description: I18n.t(this.name).options.showLayer,
-          callback: (event) => {
-            this.settings.set(['options', 'showLayer'], event.target.checked)
-            this.getLayer().setVisibility(event.target.checked)
-            document.querySelector('#layer-switcher-item_address_polygons').checked = event.target.checked
-          }
-        },
         showPolygonName: {
           title: I18n.t(this.name).options.showPolygonName,
           description: I18n.t(this.name).options.showPolygonName,
           callback: (event) => {
             this.settings.set(['options', 'showPolygonName'], event.target.checked)
-            this.drawBorders()
+            this.drawPolygons()
           }
         },
         showRegionName: {
@@ -144,7 +186,7 @@
           description: I18n.t(this.name).options.showRegionName,
           callback: (event) => {
             this.settings.set(['options', 'showRegionName'], event.target.checked)
-            this.drawBorders()
+            this.drawPolygons()
           }
         },
         fillPolygons: {
@@ -152,36 +194,47 @@
           description: I18n.t(this.name).options.fillPolygons,
           callback: (event) => {
             this.settings.set(['options', 'fillPolygons'], event.target.checked)
-            this.drawBorders()
+            this.drawPolygons()
           }
         }
       }
+
+      this.initTab()
+
+      this.initLayer()
+
+      this.initHandlers()
     }
 
-    init () {
-      this.log('init')
-      this.addTab()
-      this.addMenuSwitcher()
+    initHelper() {
+      this.helper = new WMEUIHelper(this.name)
     }
 
     /**
-     * @return {OpenLayers.Layer.Vector}
+     * Initial the layer: set visibility to true and add the checkbox for this layer
      */
-    getLayer () {
-      if (!this.layer) {
-        this.layer = this.createLayer()
-      }
-      return this.layer
+    initLayer () {
+      this.wmeSDK.Map.addLayer({
+        layerName: this.name,
+        styleRules: layerConfig.defaultRule.styleRules,
+        styleContext: layerConfig.defaultRule.styleContext
+      });
+      this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 9999 });
+      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: true});
+
+      this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
+      this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: true })
     }
 
-    createLayer () {
-      let layer = new OpenLayers.Layer.Vector(this.name, {
-        displayInLayerSwitcher: true,
-        uniqueName: 'AddressPolygons',
-        visibility: this.settings.get('options', 'showLayer')
-      })
-      W.map.addLayer(layer)
-      return layer
+    initHandlers () {
+      this.wmeSDK.Events.on({
+        eventName: "wme-layer-checkbox-toggled",
+        eventHandler: (e) => {
+          if (e.name === this.name) {
+            this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: e.checked });
+          }
+        },
+      });
     }
 
     /**
@@ -192,24 +245,22 @@
     }
 
     setPolygons (polygons) {
-      console.log(`Total ${polygons.Default.length} polygons`)
+      this.log(`Total ${polygons.Default.length} polygons`)
       this.polygons = polygons
     }
 
-    addTab () {
-      /** @type {WMEUIHelper} */
-      this.helper = new WMEUIHelper(this.name)
-
+    initTab () {
       /** @type {WMEUIHelperTab} */
-      this.tab = this.helper.createTab(
+      let tab = this.helper.createTab(
         I18n.t(this.name).title,
         {
+          sidebar: this.wmeSDK.Sidebar,
           image: GM_info.script.icon
         }
       )
-      this.tab.addText('description', I18n.t(this.name).description)
+      tab.addText('description', I18n.t(this.name).description)
 
-      let button = this.tab.addButton(
+      let button = tab.addButton(
         'reload',
         I18n.t(this.name).buttons.reload,
         I18n.t(this.name).buttons.reload,
@@ -235,7 +286,7 @@
           )
         }
       }
-      this.tab.addElement(fsSettings)
+      tab.addElement(fsSettings)
 
       /**
        * @type {WMEUIHelperControlInput}
@@ -248,7 +299,7 @@
         (event) => {
           this.settings.set(['offset', 'x'], event.target.value)
           event.target.nextSibling.setAttribute('data-after', event.target.value)
-          this.drawBorders()
+          this.drawPolygons()
         },
         this.settings.get('offset', 'x'),
         -20,
@@ -263,7 +314,7 @@
         (event) => {
           this.settings.set(['offset', 'y'], event.target.value)
           event.target.nextSibling.setAttribute('data-after', event.target.value)
-          this.drawBorders()
+          this.drawPolygons()
         },
         this.settings.get('offset', 'y'),
         -20,
@@ -272,13 +323,15 @@
       )
       offsetY.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'y'))
 
-      this.tab.addElement(fsKeys)
+      tab.addElement(fsKeys)
 
-      this.tab.addText(
+      tab.addText(
         'info',
         '<a href="' + GM_info.scriptUpdateURL + '">' + GM_info.script.name + '</a> ' + GM_info.script.version
       )
-      this.tab.inject()
+      tab.addText('blue', 'made in')
+      tab.addText('yellow', 'Ukraine')
+      tab.inject().then(() => this.log('Script Tab Initialized') )
 
       this.refreshOffset()
     }
@@ -288,35 +341,15 @@
       document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'))
     }
 
-    addMenuSwitcher () {
-      // add layer switcher to layer's menu
-      let ul = document.querySelector('.collapsible-GROUP_DISPLAY')
-      let li = document.createElement('li')
-      let checkbox = document.createElement('wz-checkbox')
-      checkbox.id = 'layer-switcher-item_address_polygons'
-      checkbox.type = 'checkbox'
-      checkbox.className = 'hydrated'
-      checkbox.checked = this.getLayer().getVisibility()
-      checkbox.appendChild(document.createTextNode(I18n.t(NAME).title))
-      checkbox.onclick = () => {
-        let newState = !this.getLayer().getVisibility()
-        this.getLayer().setVisibility(newState)
-        this.settings.set(['options', 'showLayer'], newState)
-        document.querySelector('#address-polygons-settings-showLayer').checked = newState
-      }
-      li.append(checkbox)
-      ul.append(li)
-    }
-
     loadPolygons () {
-      console.log("Load polygons from server")
-      const url = 'http://stat.waze.com.ua/address_map/address_map.php'
-      sendHTTPRequest(url, (res) => {
+      this.log("Load polygons from server")
+      const url = 'https://stat.waze.com.ua/address_map/address_map.php'
+      this.sendHTTPRequest(url, (res) => {
         if (validateHTTPResponse(res)) {
           let out = JSON.parse(res.responseText)
           if (out.result === 'success') {
             this.setPolygons(out.data.polygons)
-            this.drawBorders()
+            this.drawPolygons()
           } else {
             alert(NAME + ': Помилка отримання бази з сервера або ця область не містить інформації про адреси!')
           }
@@ -324,93 +357,144 @@
       })
     }
 
-    drawBorders () {
-      this.getLayer().destroyFeatures()
+    drawPolygons () {
+      this.wmeSDK.Map.removeAllFeaturesFromLayer({ layerName: NAME });
+      this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: false });
 
       let data = this.getPolygons()
 
       if (data) {
-        let parser = new OpenLayers.Format.WKT()
-        parser.internalProjection = W.map.getProjectionObject()
-        parser.externalProjection = new OpenLayers.Projection('EPSG:4326')
+        let invalid = 0
 
         Object.keys(data).forEach((group) => {
           data[group].forEach((item) => {
-            let feature = parser.read(item.polygon)
+
+            let multiPolygon = wellknown.parse(item.polygon)
+
+            let polygon = multiPolygon.coordinates[0]
+
+            let label = ''
+
+            if (this.settings.get('options', 'showPolygonName')) {
+              label = item.name
+
+              if (!this.settings.get('options', 'showRegionName')) {
+                label = label.split("\n").slice(-2).join("\n")
+              }
+            }
+
+            let feature = turf.polygon(
+              polygon,
+              {
+                styleName: "stylePolygon",
+                style: {
+                  fill: this.settings.get('options', 'fillPolygons') ? 0.5 : 0,
+                  label: label,
+                  color: item.color,
+                  status: item.status === 'active'
+                },
+              },
+              { id: "polygon_" + item.center }
+            )
+
             if (feature) {
-              feature.geometry.move(
-                parseFloat(this.settings.get('offset', 'x')),
-                parseFloat(this.settings.get('offset', 'y'))
+              // Apply the offset
+              feature.geometry.coordinates[0] = this.translateCoordinatesArray(
+                feature.geometry.coordinates[0],
+                this.settings.get('offset', 'x'),
+                this.settings.get('offset', 'y')
               )
-              //feature.fid = item.polygon.hashCode()
-              feature.style = new BorderStyle(this.settings, item.color, item.name, item.status === 'active')
-              this.getLayer().addFeatures(feature)
+              try {
+                this.wmeSDK.Map.addFeatureToLayer({ layerName: NAME, feature: feature });
+              } catch (e) {
+                invalid++
+              }
             }
           })
         })
-      }
-    }
-  }
 
-  function BorderStyle (settings, color, label, visible = true) {
-    this.fill = settings.get('options', 'fillPolygons')
-    this.fillColor = color // #ee9900
-    this.fillOpacity = 0.4
-    this.stroke = true
-    this.strokeColor = color
-    this.strokeOpacity = 1
-    this.strokeWidth = 3
-    this.strokeLinecap = 'round' // [butt | round | square]
-    this.strokeDashstyle = 'longdash' // [dot | dash | dashdot | longdash | longdashdot | solid]
-
-    if (!settings.get('options', 'showRegionName')) {
-      let parts = label.split("\n")
-      parts = parts.slice(-2)
-      label = parts.join("\n")
-    }
-
-    this.label = settings.get('options', 'showPolygonName') ? label : null
-
-    this.labelOutlineColor = 'black'
-    this.labelOutlineWidth = 1
-    this.fontSize = 13
-    // this.fontColor = color;
-    this.fontColor = 'white'
-    this.fontOpacity = 1
-    // this.fontWeight = "bold";
-    this.display = visible ? '' : 'none'
-  }
-
-  function sendHTTPRequest (url, callback) {
-    // transform from EPSG:900913 to EPSG:4326
-    let urPos = new OpenLayers.LonLat(W.map.getCenter().lon, W.map.getCenter().lat)
-      urPos.transform(
-        new OpenLayers.Projection('EPSG:900913'),
-        new OpenLayers.Projection('EPSG:4326')
-      )
-
-    GM_xmlhttpRequest({
-      url: `${url}?lat=${urPos.lat}&lon=${urPos.lon}`,
-      method: 'GET',
-      timeout: requestsTimeout,
-      onload: function (res) {
-        if (callback) {
-          callback(res)
+        if (invalid > 0) {
+          this.log('Skipped ' + invalid + ' polygons')
         }
-        document.querySelector('.address-polygons-reload').disabled = false
-      },
-      onreadystatechange: function (res) {
-      },
-      ontimeout: function () {
-        document.querySelector('.address-polygons-reload').disabled = false
-        alert(NAME + ': Вибачте, запит скинуто за часом!')
-      },
-      onerror: function () {
-        document.querySelector('.address-polygons-reload').disabled = false
-        alert(NAME + ': Вибачте, помилка запиту!')
       }
-    })
+
+      this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: true });
+    }
+
+    /**
+     * Translates an array of [lon, lat] coordinates by an offset defined in meters.
+     *
+     * @param {number[][]} coordinates - Array of coordinate pairs: [[lon1, lat1], [lon2, lat2], ...]
+     * @param {number} metersLon - The distance in meters to offset East/West (longitude).
+     * @param {number} metersLat - The distance in meters to offset North/South (latitude).
+     * @returns {number[][]} A new array of translated coordinate pairs.
+     */
+    translateCoordinatesArray(coordinates, metersLon, metersLat) {
+      if (!coordinates || coordinates.length === 0) {
+        return [];
+      }
+
+      // --- 1. Determine Conversion Factors based on Current Latitude ---
+      // Use the latitude of the first point for the calculation
+      const currentLon = parseFloat(coordinates[0][0]);
+      const currentLat = parseFloat(coordinates[0][1]);
+
+      const EARTH_RADIUS_M = 6371000;
+      const latInRadians = currentLat * (Math.PI / 180);
+
+      // Calculate Latitude Offset (Degrees)
+      const deltaLat = parseFloat(metersLat) / EARTH_RADIUS_M;
+      const offsetLatDeg = deltaLat * (180 / Math.PI);
+
+      // Calculate Longitude Offset (Degrees)
+      const denominatorLon = EARTH_RADIUS_M * Math.cos(latInRadians);
+      const deltaLon = parseFloat(metersLon) / denominatorLon;
+      const offsetLonDeg = deltaLon * (180 / Math.PI);
+
+      // --- 2. Apply Offsets to All Coordinates using map() ---
+      // The map function iterates over every [lon, lat] pair
+      const newCoordinates = coordinates.map(coord => {
+        const originalLon = coord[0];
+        const originalLat = coord[1];
+
+        // Apply the calculated degree offsets
+        const newLon = parseFloat(originalLon) + offsetLonDeg;
+        const newLat = parseFloat(originalLat) + offsetLatDeg;
+
+        // Return the new translated coordinate pair
+        return [newLon, newLat];
+      });
+
+      return newCoordinates;
+    }
+
+    sendHTTPRequest (url, callback) {
+      let center = this.wmeSDK.Map.getMapCenter()
+
+      GM_xmlhttpRequest({
+        url: `${url}?lat=${center.lat}&lon=${center.lon}`,
+        method: 'GET',
+        timeout: requestsTimeout,
+        onload: function (res) {
+          if (callback) {
+            callback(res)
+          }
+          document.querySelector('.address-polygons-reload').disabled = false
+        },
+        onreadystatechange: function (res) {
+        },
+        ontimeout: function () {
+          document.querySelector('.address-polygons-reload').disabled = false
+          alert(NAME + ': Вибачте, запит скинуто за часом!')
+        },
+        onerror: function () {
+          document.querySelector('.address-polygons-reload').disabled = false
+          alert(NAME + ': Вибачте, помилка запиту!')
+        }
+      })
+    }
   }
+
 
   function validateHTTPResponse (res) {
     let result = false,
@@ -461,9 +545,7 @@
   }
 
   $(document).on('bootstrap.wme', () => {
-    let Instance = new UAAddressData(NAME, SETTINGS)
-
-    Instance.init()
+    new UAAddressData(NAME, SETTINGS)
   })
 
 })()
