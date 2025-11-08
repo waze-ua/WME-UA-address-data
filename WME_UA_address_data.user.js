@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.11.04.001
+// @version      2026.11.05.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -11,8 +11,8 @@
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1681948/WME-Bootstrap.js
-// @require      https://update.greasyfork.org/scripts/450221/1681856/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450160/1691572/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450221/1691071/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1688694/WME-UI.js
 // @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
 // @updateURL    https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
@@ -25,12 +25,11 @@
 
 /* global require */
 /* global $, jQuery */
-/* global W */
 /* global I18n */
-/* global OpenLayers */
-/* global WME, WMEBase */
-/* global WMEUI, WMEUIHelper, WMEUIHelperPanel, WMEUIHelperModal, WMEUIHelperTab, WMEUIShortcut, WMEUIHelperFieldset */
+/* global WMEBase */
+/* global WMEUI, WMEUIHelper, WMEUIHelperPanel, WMEUIHelperModal, WMEUIHelperTab, WMEUIHelperFieldset */
 /* global Container, Settings, SimpleCache, Tools  */
+/* global Node$1, Segment, Venue, VenueAddress, WmeSDK */
 
 (function () {
   'use strict'
@@ -61,7 +60,6 @@
       polygons: 'Polygons list',
       settings: 'Settings',
       buttons: {
-        reload: 'Reload list',
         control: 'Offset',
         x: 'Horizontal',
         y: 'Vertical',
@@ -82,7 +80,6 @@
       polygons: 'Список полігонів',
       settings: 'Налаштування',
       buttons: {
-        reload: 'Завантажити список',
         control: 'Зсув полігонів',
         x: 'По горизонталі',
         y: 'По вертикалі',
@@ -163,12 +160,9 @@
     },
   };
 
-  let UAAddressDataLayer = false
-
   class UAAddressData extends WMEBase {
     constructor (name, settings) {
       super(name, settings)
-      this.initHelper()
 
       this.polygons = null
 
@@ -199,54 +193,19 @@
         }
       }
 
+      this.initHelper()
+
       this.initTab()
 
       this.initLayer()
 
       this.initHandlers()
+
+      this.createShortcut()
     }
 
     initHelper() {
       this.helper = new WMEUIHelper(this.name)
-    }
-
-    /**
-     * Initial the layer: set visibility to true and add the checkbox for this layer
-     */
-    initLayer () {
-      this.wmeSDK.Map.addLayer({
-        layerName: this.name,
-        styleRules: layerConfig.defaultRule.styleRules,
-        styleContext: layerConfig.defaultRule.styleContext
-      });
-      this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 9999 });
-      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: true});
-
-      this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
-      this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: true })
-    }
-
-    initHandlers () {
-      this.wmeSDK.Events.on({
-        eventName: "wme-layer-checkbox-toggled",
-        eventHandler: (e) => {
-          if (e.name === this.name) {
-            this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: e.checked });
-          }
-        },
-      });
-    }
-
-    /**
-     * @return {[]}
-     */
-    getPolygons () {
-      return this.polygons
-    }
-
-    setPolygons (polygons) {
-      this.log(`Total ${polygons.Default.length} polygons`)
-      this.polygons = polygons
     }
 
     initTab () {
@@ -259,19 +218,6 @@
         }
       )
       tab.addText('description', I18n.t(this.name).description)
-
-      let button = tab.addButton(
-        'reload',
-        I18n.t(this.name).buttons.reload,
-        I18n.t(this.name).buttons.reload,
-        () => {
-          this.disabled = false
-          this.loadPolygons()
-        },
-        'S+81'
-      )
-
-      button.html().className += ' waze-btn-blue'
 
       // Add settings section
       let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings)
@@ -336,25 +282,107 @@
       this.refreshOffset()
     }
 
-    refreshOffset () {
-      document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'))
-      document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'))
+    /**
+     * Initial the layer: set visibility to true and add the checkbox for this layer
+     */
+    initLayer () {
+      this.wmeSDK.Map.addLayer({
+        layerName: this.name,
+        styleRules: layerConfig.defaultRule.styleRules,
+        styleContext: layerConfig.defaultRule.styleContext
+      });
+
+      this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 9999 });
+      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: false});
+
+      this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
+      this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: false })
+    }
+
+    initHandlers () {
+      let zoom = this.wmeSDK.Map.getZoomLevel()
+
+      this.wmeSDK.Events.on({
+        eventName: "wme-layer-checkbox-toggled",
+        eventHandler: (e) => {
+          if (e.name === this.name) {
+            this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: e.checked });
+            if (e.checked) {
+              this.loadPolygons()
+            }
+          }
+        },
+      });
+
+      this.wmeSDK.Events.on({
+        eventName: "wme-map-zoom-changed",
+        eventHandler: () => {
+          if (zoom > this.wmeSDK.Map.getZoomLevel()
+            &&  this.wmeSDK.Map.isLayerVisible({ layerName: this.name })) {
+            this.loadPolygons()
+          }
+        },
+      });
+
+      this.wmeSDK.Events.on({
+        eventName: "wme-map-move-end",
+        eventHandler: () => {
+          if (this.wmeSDK.Map.isLayerVisible({ layerName: this.name })) {
+            this.loadPolygons()
+          }
+        },
+      });
+    }
+
+    /**
+     * Create the shortcut
+     */
+    createShortcut () {
+      let shortcut = {
+        callback: () => this.togglePolygons(),
+        description: I18n.t(this.name).description,
+        shortcutId: this.id,
+        shortcutKeys: 'S+81',
+      };
+
+      if (!this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
+        this.wmeSDK.Shortcuts.createShortcut(shortcut);
+      } else {
+        this.log('Shortcut already in use')
+      }
+    }
+
+    /**
+     * @return {[]}
+     */
+    getPolygons () {
+      return this.polygons
+    }
+
+    setPolygons (polygons) {
+      this.log(`Total ${polygons.Default.length} polygons`)
+      this.polygons = polygons
     }
 
     loadPolygons () {
       this.log("Load polygons from server")
+
+      this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: true })
+
       const url = 'https://stat.waze.com.ua/address_map/address_map.php'
       this.sendHTTPRequest(url, (res) => {
-        if (validateHTTPResponse(res)) {
+        if (this.validateHTTPResponse(res)) {
           let out = JSON.parse(res.responseText)
           if (out.result === 'success') {
             this.setPolygons(out.data.polygons)
             this.drawPolygons()
           } else {
-            alert(NAME + ': Помилка отримання бази з сервера або ця область не містить інформації про адреси!')
+            this.log('Error during load polygons from server')
           }
         }
       })
+
+      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: true});
     }
 
     drawPolygons () {
@@ -421,6 +449,20 @@
       this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: true });
     }
 
+    togglePolygons () {
+      if (this.wmeSDK.Map.isLayerVisible({ layerName: this.name })) {
+        this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: false })
+        this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: false });
+      } else {
+        this.loadPolygons()
+      }
+    }
+
+    refreshOffset () {
+      document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'))
+      document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'))
+    }
+
     /**
      * Translates an array of [lon, lat] coordinates by an offset defined in meters.
      *
@@ -453,80 +495,95 @@
 
       // --- 2. Apply Offsets to All Coordinates using map() ---
       // The map function iterates over every [lon, lat] pair
-      const newCoordinates = coordinates.map(coord => {
-        const originalLon = coord[0];
-        const originalLat = coord[1];
+      return coordinates.map(coordinates => {
+        const originalLon = parseFloat(coordinates[0]);
+        const originalLat = parseFloat(coordinates[1]);
 
         // Apply the calculated degree offsets
-        const newLon = parseFloat(originalLon) + offsetLonDeg;
-        const newLat = parseFloat(originalLat) + offsetLatDeg;
+        const newLon = originalLon + offsetLonDeg;
+        const newLat = originalLat + offsetLatDeg;
 
         // Return the new translated coordinate pair
         return [newLon, newLat];
       });
-
-      return newCoordinates;
     }
 
     sendHTTPRequest (url, callback) {
       let center = this.wmeSDK.Map.getMapCenter()
+      let zoom = this.wmeSDK.Map.getZoomLevel()
+      let radius = 1000
+
+      if (zoom < 16) {
+        this.log('Please Zoom In to receive an information about polygons');
+        return
+      } else {
+        switch (zoom) {
+          case 16:
+            radius = 1000
+            break;
+          case 17:
+            radius = 600
+            break;
+          case 18:
+          default:
+            radius = 400
+            break;
+        }
+      }
 
       GM_xmlhttpRequest({
-        url: `${url}?lat=${center.lat}&lon=${center.lon}`,
+        url: `${url}?lat=${center.lat}&lon=${center.lon}&radius=${radius}`,
         method: 'GET',
         timeout: requestsTimeout,
         onload: function (res) {
           if (callback) {
             callback(res)
           }
-          document.querySelector('.address-polygons-reload').disabled = false
         },
         onreadystatechange: function (res) {
         },
         ontimeout: function () {
-          document.querySelector('.address-polygons-reload').disabled = false
-          alert(NAME + ': Вибачте, запит скинуто за часом!')
+          this.log('Connection Timeout');
         },
         onerror: function () {
-          document.querySelector('.address-polygons-reload').disabled = false
-          alert(NAME + ': Вибачте, помилка запиту!')
+          this.log('Server Error');
         }
       })
     }
-  }
 
 
-  function validateHTTPResponse (res) {
-    let result = false,
-      displayError = true,
-      errorMsg
-    if (res) {
-      switch (res.status) {
-        case 200:
-          displayError = false
-          if (res.responseHeaders.match(/content-type:\s?application\/json/i)) {
-            result = true
-          } else if (res.responseHeaders.match(/content-type:\s?text\/html/i)) {
-            displayHtmlPage(res)
-          }
-          break
-        default:
-          errorMsg = 'Error: unsupported status code - ' + res.status
-          console.warn(res.responseHeaders)
-          console.warn(res.responseText)
-          break
+    validateHTTPResponse (res) {
+      let result = false,
+        displayError = true,
+        errorMsg
+      if (res) {
+        switch (res.status) {
+          case 200:
+            displayError = false
+            if (res.responseHeaders.match(/content-type:\s?application\/json/i)) {
+              result = true
+            } else if (res.responseHeaders.match(/content-type:\s?text\/html/i)) {
+              displayHtmlPage(res)
+            }
+            break
+          default:
+            errorMsg = 'Error: unsupported status code - ' + res.status
+            console.warn(res.responseHeaders)
+            console.warn(res.responseText)
+            break
+        }
+      } else {
+        errorMsg = 'Помилка: відповідь порожня!'
       }
-    } else {
-      errorMsg = 'Помилка: відповідь порожня!'
-    }
 
-    if (displayError) {
-      if (!errorMsg) {
-        errorMsg = 'Помилка обробки запиту. Відповідь: ' + res.responseText
+      if (displayError) {
+        if (!errorMsg) {
+          errorMsg = 'Помилка обробки запиту. Відповідь: ' + res.responseText
+        }
+        alert(NAME + ' ' + errorMsg)
       }
-      alert(NAME + ' ' + errorMsg)
+      return result
     }
-    return result
   }
 
   function displayHtmlPage (res) {
