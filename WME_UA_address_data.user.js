@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.11.05.001
+// @version      2026.11.10.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -345,11 +345,11 @@
         shortcutKeys: 'S+81',
       };
 
-      if (!this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
-        this.wmeSDK.Shortcuts.createShortcut(shortcut);
-      } else {
+      if (this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
         this.log('Shortcut already in use')
+        shortcut.shortcutKeys = null
       }
+      this.wmeSDK.Shortcuts.createShortcut(shortcut);
     }
 
     /**
