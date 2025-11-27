@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.11.10.001
+// @version      2025.11.25.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -11,7 +11,7 @@
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1691572/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450160/1701700/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/450221/1691071/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1688694/WME-UI.js
 // @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
@@ -49,6 +49,7 @@
       showRegionName: false,
       fillPolygons: true
     },
+    layer: false,
     polygons: {}
   }
 
@@ -293,10 +294,14 @@
       });
 
       this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 9999 });
-      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: false});
+      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer')});
 
       this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
-      this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: false })
+      this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: this.settings.get('layer') })
+
+      if (this.settings.get('layer')) {
+        this.loadPolygons()
+      }
     }
 
     initHandlers () {
@@ -307,6 +312,7 @@
         eventHandler: (e) => {
           if (e.name === this.name) {
             this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: e.checked });
+            this.settings.set(['layer'], e.checked)
             if (e.checked) {
               this.loadPolygons()
             }
@@ -386,8 +392,8 @@
     }
 
     drawPolygons () {
-      this.wmeSDK.Map.removeAllFeaturesFromLayer({ layerName: NAME });
-      this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: false });
+      this.wmeSDK.Map.removeAllFeaturesFromLayer({ layerName: this.name });
+      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: false });
 
       let data = this.getPolygons()
 
@@ -433,7 +439,7 @@
                 this.settings.get('offset', 'y')
               )
               try {
-                this.wmeSDK.Map.addFeatureToLayer({ layerName: NAME, feature: feature });
+                this.wmeSDK.Map.addFeatureToLayer({ layerName: this.name, feature: feature });
               } catch (e) {
                 invalid++
               }
@@ -446,7 +452,7 @@
         }
       }
 
-      this.wmeSDK.Map.setLayerVisibility({ layerName: NAME, visibility: true });
+      this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: true });
     }
 
     togglePolygons () {
