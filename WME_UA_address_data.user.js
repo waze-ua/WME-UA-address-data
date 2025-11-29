@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2025.11.25.001
+// @version      2025.11.29.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -11,7 +11,7 @@
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1701700/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450160/1704233/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/450221/1691071/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1688694/WME-UI.js
 // @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
