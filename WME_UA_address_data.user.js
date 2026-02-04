@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2025.11.29.001
+// @version      2026.02.04.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -36,7 +36,7 @@
 
   const requestsTimeout = 10000 // in ms
 
-  // Script name, used as unique identifier
+  // Script name, used as a unique identifier
   const NAME = 'Address Polygons'
 
   const SETTINGS = {
@@ -546,14 +546,9 @@
             callback(res)
           }
         },
-        onreadystatechange: function (res) {
-        },
-        ontimeout: function () {
-          this.log('Connection Timeout');
-        },
-        onerror: function () {
-          this.log('Server Error');
-        }
+        onreadystatechange: (res) => {},
+        ontimeout: () => this.log('Connection Timeout ⛓️‍💥'),
+        onerror: () => this.log('Server Error 🛑')
       })
     }
 
@@ -601,10 +596,10 @@
         'Після підтвердження закрийте сторінку та перезавантажте WME.')
     }
     let w = window.open()
-    w.document.open()
-    w.document.write(res.responseText)
-    w.document.close()
-    w.location = res.finalUrl
+        w.document.open()
+        w.document.write(res.responseText)
+        w.document.close()
+        w.location = res.finalUrl
   }
 
   $(document).on('bootstrap.wme', () => {
