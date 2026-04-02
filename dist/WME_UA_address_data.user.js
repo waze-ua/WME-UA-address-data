@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.02.04.001
+// @version      2026.04.02.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -118,7 +118,7 @@
                         strokeWidth: 3,
                         strokeLinecap: 'round', // [butt | round | square]
                         strokeDashstyle: 'longdash',
-                        graphicZIndex: 9999,
+                        graphicZIndex: 100,
                         label: "${label}",
                         labelOutlineColor: '#000',
                         labelOutlineWidth: 1,
@@ -236,7 +236,7 @@
                 styleRules: layerConfig.defaultRule.styleRules,
                 styleContext: layerConfig.defaultRule.styleContext
             });
-            this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 9999 });
+            this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 100 });
             this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer') });
             this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
             this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: this.settings.get('layer') });

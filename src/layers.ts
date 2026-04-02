@@ -32,7 +32,7 @@ export const layerConfig = {
           strokeWidth: 3,
           strokeLinecap: 'round', // [butt | round | square]
           strokeDashstyle: 'longdash',
-          graphicZIndex: 9999,
+          graphicZIndex: 100,
           label: "${label}",
           labelOutlineColor: '#000',
           labelOutlineWidth: 1,

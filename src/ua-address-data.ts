@@ -138,7 +138,7 @@ export class UAAddressData extends WMEBase {
       styleContext: layerConfig.defaultRule.styleContext
     });
 
-    this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 9999 });
+    this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 100 });
     this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer')});
 
     this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
