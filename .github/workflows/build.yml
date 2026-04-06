@@ -26,6 +26,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH=$(git branch --show-current)
-          git add dist/WME_UA_address_data.user.js
+          git add WME_UA_address_data.user.js
           git diff --cached --quiet || git commit -m "chore: rebuild dist [skip ci]"
           git push origin "$BRANCH"
