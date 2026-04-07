@@ -198,11 +198,17 @@
             // Add settings section
             let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings);
             let options = this.settings.get('options');
+            let checkboxes = {};
             for (let item in options) {
                 if (options.hasOwnProperty(item) && this.tabOptions[item]) {
-                    fsSettings.addCheckbox('settings-' + item, this.tabOptions[item].title, this.tabOptions[item].callback, this.settings.get('options', item));
+                    checkboxes['settings-' + item] = {
+                        title: this.tabOptions[item].title,
+                        callback: this.tabOptions[item].callback,
+                        checked: this.settings.get('options', item),
+                    };
                 }
             }
+            fsSettings.addCheckboxes(checkboxes);
             tab.addElement(fsSettings);
             /**
              * @type {WMEUIHelperControlInput}
