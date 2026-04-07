@@ -5,7 +5,6 @@ import { displayHtmlPage } from './helpers'
 export class UAAddressData extends WMEBase {
   polygons: any
   tabOptions: any
-  helper: any
 
   constructor (name, settings) {
     super(name, settings)
@@ -39,19 +38,13 @@ export class UAAddressData extends WMEBase {
       }
     }
 
-    this.initHelper()
-
     this.initTab()
 
     this.initLayer()
 
     this.initHandlers()
 
-    this.createShortcut()
-  }
-
-  initHelper() {
-    this.helper = new WMEUIHelper(this.name)
+    this.initShortcuts()
   }
 
   initTab () {
@@ -189,19 +182,8 @@ export class UAAddressData extends WMEBase {
   /**
    * Create the shortcut
    */
-  createShortcut () {
-    let shortcut = {
-      callback: () => this.togglePolygons(),
-      description: I18n.t(this.name).description,
-      shortcutId: this.id,
-      shortcutKeys: 'S+81',
-    };
-
-    if (this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
-      this.log('Shortcut already in use')
-      shortcut.shortcutKeys = null
-    }
-    this.wmeSDK.Shortcuts.createShortcut(shortcut);
+  initShortcuts () {
+    this.createShortcut('toggle', I18n.t(this.name).description, 'S+81', () => this.togglePolygons())
   }
 
   /**

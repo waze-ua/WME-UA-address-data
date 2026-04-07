@@ -179,14 +179,10 @@
                     }
                 }
             };
-            this.initHelper();
             this.initTab();
             this.initLayer();
             this.initHandlers();
-            this.createShortcut();
-        }
-        initHelper() {
-            this.helper = new WMEUIHelper(this.name);
+            this.initShortcuts();
         }
         initTab() {
             /** @type {WMEUIHelperTab} */
@@ -285,18 +281,8 @@
         /**
          * Create the shortcut
          */
-        createShortcut() {
-            let shortcut = {
-                callback: () => this.togglePolygons(),
-                description: I18n.t(this.name).description,
-                shortcutId: this.id,
-                shortcutKeys: 'S+81',
-            };
-            if (this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
-                this.log('Shortcut already in use');
-                shortcut.shortcutKeys = null;
-            }
-            this.wmeSDK.Shortcuts.createShortcut(shortcut);
+        initShortcuts() {
+            this.createShortcut('toggle', I18n.t(this.name).description, 'S+81', () => this.togglePolygons());
         }
         /**
          * @return {[]}
