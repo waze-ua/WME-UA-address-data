@@ -79,12 +79,11 @@ export class UAAddressData extends WMEBase {
      */
     let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).buttons.control)
 
-    let offsetX = fsKeys.addRange(
+    fsKeys.addRange(
       'offset-x',
       WMEUI.t(NAME).buttons.x,
       (event) => {
         this.settings.set('offset', 'x', event.target.value)
-        event.target.nextSibling.setAttribute('data-after', event.target.value)
         this.drawPolygons()
       },
       this.settings.get('offset', 'x'),
@@ -92,14 +91,12 @@ export class UAAddressData extends WMEBase {
       20,
       0.1
     )
-    offsetX.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'x'))
 
-    let offsetY = fsKeys.addRange(
+    fsKeys.addRange(
       'offset-y',
       WMEUI.t(NAME).buttons.y,
       (event) => {
         this.settings.set('offset', 'y', event.target.value)
-        event.target.nextSibling.setAttribute('data-after', event.target.value)
         this.drawPolygons()
       },
       this.settings.get('offset', 'y'),
@@ -107,7 +104,6 @@ export class UAAddressData extends WMEBase {
       20,
       0.1
     )
-    offsetY.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'y'))
 
     tab.addElement(fsKeys)
 

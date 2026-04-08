@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.04.02.001
+// @version      2026.04.08.001
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -14,6 +14,7 @@
 // @require      https://update.greasyfork.org/scripts/450160/1785943/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/450221/1785960/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1785964/WME-UI.js
+// @require      https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js
 // @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
 // @updateURL    https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
 // @downloadURL  https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
@@ -210,18 +211,14 @@
              * @type {WMEUIHelperControlInput}
              */
             let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).buttons.control);
-            let offsetX = fsKeys.addRange('offset-x', WMEUI.t(NAME).buttons.x, (event) => {
+            fsKeys.addRange('offset-x', WMEUI.t(NAME).buttons.x, (event) => {
                 this.settings.set('offset', 'x', event.target.value);
-                event.target.nextSibling.setAttribute('data-after', event.target.value);
                 this.drawPolygons();
             }, this.settings.get('offset', 'x'), -20, 20, 0.1);
-            offsetX.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'x'));
-            let offsetY = fsKeys.addRange('offset-y', WMEUI.t(NAME).buttons.y, (event) => {
+            fsKeys.addRange('offset-y', WMEUI.t(NAME).buttons.y, (event) => {
                 this.settings.set('offset', 'y', event.target.value);
-                event.target.nextSibling.setAttribute('data-after', event.target.value);
                 this.drawPolygons();
             }, this.settings.get('offset', 'y'), -20, 20, 0.1);
-            offsetY.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'y'));
             tab.addElement(fsKeys);
             tab.addText('info', '<a href="' + GM_info.scriptUpdateURL + '">' + GM_info.script.name + '</a> ' + GM_info.script.version);
             tab.addText('blue', 'made in');
@@ -475,7 +472,7 @@
         }
     }
 
-    var css_248z = ".address-polygons legend {\n  font-size: 14px;\n  font-weight: bold;\n  margin: 0px 0px 10px 0px;\n  padding: 10px 0px 0px 0px;\n}\n\n.address-polygons > .control-label {\n  font-size: 14px;\n  font-weight: bold;\n  margin: 0px 0px 10px 0px;\n  padding: 10px 0px 0px 0px;\n}\n\n.address-polygons > .wme-ui-fieldset-content > fieldset {\n  border: 1px solid #ddd;\n  padding: 4px;\n}\n\n.address-polygons .address-polygons-offset-x label,\n.address-polygons .address-polygons-offset-y label {\n  font-weight: 400;\n}\n\n.address-polygons .address-polygons-offset-x label::after {\n  content: attr(data-after);\n  display: inline-block;\n  padding: 2px;\n  margin: 2px;\n}\n\n.address-polygons .address-polygons-offset-y label::after {\n  content: attr(data-after);\n  display: inline-block;\n  padding: 2px;\n  margin: 2px;\n}\n.address-polygons .wme-ui-tab-content {\n  padding: 8px;\n}\np.address-polygons-info {\n  border-top: 1px solid #ccc;\n  color: #777;\n  font-size: x-small;\n  margin-top: 15px;\n  padding-top: 10px;\n  text-align: center;\n}\n\n#sidebar p.address-polygons-blue {\n  background-color: #0057B8;\n  color: white;\n  height: 32px;\n  text-align: center;\n  line-height: 32px;\n  font-size: 24px;\n  margin: 0;\n}\n\n#sidebar p.address-polygons-yellow {\n  background-color: #FFDD00;\n  color: black;\n  height: 32px;\n  text-align: center;\n  line-height: 32px;\n  font-size: 24px;\n  margin: 0;\n}\n";
+    var css_248z = ".address-polygons legend {\n    font-size: 14px;\n    font-weight: bold;\n    margin: 0 0 10px 0;\n    padding: 10px 0 0 0;\n}\n\n.address-polygons > .control-label {\n    font-size: 14px;\n    font-weight: bold;\n    margin: 0 0 10px 0;\n    padding: 10px 0 0 0;\n}\n\n.address-polygons > .wme-ui-fieldset-content > fieldset {\n    border: 1px solid #ddd;\n    padding: 4px;\n}\n\n\n.address-polygons .wme-ui-tab-content {\n    padding: 8px;\n}\n\np.address-polygons-info {\n    border-top: 1px solid #ccc;\n    color: #777;\n    font-size: x-small;\n    margin-top: 15px;\n    padding-top: 10px;\n    text-align: center;\n}\n\n#sidebar p.address-polygons-blue {\n    background-color: #0057B8;\n    color: white;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n\n#sidebar p.address-polygons-yellow {\n    background-color: #FFDD00;\n    color: black;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n";
 
     $(document).on('bootstrap.wme', () => {
         WMEUI.addTranslation(NAME, TRANSLATION);
