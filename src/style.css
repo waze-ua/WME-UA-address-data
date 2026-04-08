@@ -12,7 +12,7 @@
   padding: 10px 0px 0px 0px;
 }
 
-.address-polygons > .controls > fieldset {
+.address-polygons > .wme-ui-fieldset-content > fieldset {
   border: 1px solid #ddd;
   padding: 4px;
 }
@@ -35,7 +35,7 @@
   padding: 2px;
   margin: 2px;
 }
-.address-polygons .button-toolbar {
+.address-polygons .wme-ui-tab-content {
   padding: 8px;
 }
 p.address-polygons-info {
