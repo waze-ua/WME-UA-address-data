@@ -13,24 +13,24 @@ export class UAAddressData extends WMEBase {
 
     this.tabOptions = {
       showPolygonName: {
-        title: I18n.t(this.name).options.showPolygonName,
-        description: I18n.t(this.name).options.showPolygonName,
+        title: WMEUI.t(NAME).options.showPolygonName,
+        description: WMEUI.t(NAME).options.showPolygonName,
         callback: (event) => {
           this.settings.set(['options', 'showPolygonName'], event.target.checked)
           this.drawPolygons()
         }
       },
       showRegionName: {
-        title: I18n.t(this.name).options.showRegionName,
-        description: I18n.t(this.name).options.showRegionName,
+        title: WMEUI.t(NAME).options.showRegionName,
+        description: WMEUI.t(NAME).options.showRegionName,
         callback: (event) => {
           this.settings.set(['options', 'showRegionName'], event.target.checked)
           this.drawPolygons()
         }
       },
       fillPolygons: {
-        title: I18n.t(this.name).options.fillPolygons,
-        description: I18n.t(this.name).options.fillPolygons,
+        title: WMEUI.t(NAME).options.fillPolygons,
+        description: WMEUI.t(NAME).options.fillPolygons,
         callback: (event) => {
           this.settings.set(['options', 'fillPolygons'], event.target.checked)
           this.drawPolygons()
@@ -50,16 +50,16 @@ export class UAAddressData extends WMEBase {
   initTab () {
     /** @type {WMEUIHelperTab} */
     let tab = this.helper.createTab(
-      I18n.t(this.name).title,
+      WMEUI.t(NAME).title,
       {
         sidebar: this.wmeSDK.Sidebar,
         image: GM_info.script.icon
       }
     )
-    tab.addText('description', I18n.t(this.name).description)
+    tab.addText('description', WMEUI.t(NAME).description)
 
     // Add settings section
-    let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings)
+    let fsSettings = this.helper.createFieldset(WMEUI.t(NAME).settings)
     let options = this.settings.get('options')
     let checkboxes: Record<string, any> = {}
     for (let item in options) {
@@ -77,11 +77,11 @@ export class UAAddressData extends WMEBase {
     /**
      * @type {WMEUIHelperControlInput}
      */
-    let fsKeys = this.helper.createFieldset(I18n.t(this.name).buttons.control)
+    let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).buttons.control)
 
     let offsetX = fsKeys.addRange(
       'offset-x',
-      I18n.t(this.name).buttons.x,
+      WMEUI.t(NAME).buttons.x,
       (event) => {
         this.settings.set(['offset', 'x'], event.target.value)
         event.target.nextSibling.setAttribute('data-after', event.target.value)
@@ -96,7 +96,7 @@ export class UAAddressData extends WMEBase {
 
     let offsetY = fsKeys.addRange(
       'offset-y',
-      I18n.t(this.name).buttons.y,
+      WMEUI.t(NAME).buttons.y,
       (event) => {
         this.settings.set(['offset', 'y'], event.target.value)
         event.target.nextSibling.setAttribute('data-after', event.target.value)
@@ -183,7 +183,7 @@ export class UAAddressData extends WMEBase {
    * Create the shortcut
    */
   initShortcuts () {
-    this.createShortcut('toggle', I18n.t(this.name).description, 'S+81', () => this.togglePolygons())
+    this.createShortcut('toggle', WMEUI.t(NAME).description, 'S+81', () => this.togglePolygons())
   }
 
   /**
