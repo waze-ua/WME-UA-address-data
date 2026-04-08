@@ -158,7 +158,7 @@
                     title: WMEUI.t(NAME).options.showPolygonName,
                     description: WMEUI.t(NAME).options.showPolygonName,
                     callback: (event) => {
-                        this.settings.set(['options', 'showPolygonName'], event.target.checked);
+                        this.settings.set('options', 'showPolygonName', event.target.checked);
                         this.drawPolygons();
                     }
                 },
@@ -166,7 +166,7 @@
                     title: WMEUI.t(NAME).options.showRegionName,
                     description: WMEUI.t(NAME).options.showRegionName,
                     callback: (event) => {
-                        this.settings.set(['options', 'showRegionName'], event.target.checked);
+                        this.settings.set('options', 'showRegionName', event.target.checked);
                         this.drawPolygons();
                     }
                 },
@@ -174,7 +174,7 @@
                     title: WMEUI.t(NAME).options.fillPolygons,
                     description: WMEUI.t(NAME).options.fillPolygons,
                     callback: (event) => {
-                        this.settings.set(['options', 'fillPolygons'], event.target.checked);
+                        this.settings.set('options', 'fillPolygons', event.target.checked);
                         this.drawPolygons();
                     }
                 }
@@ -211,13 +211,13 @@
              */
             let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).buttons.control);
             let offsetX = fsKeys.addRange('offset-x', WMEUI.t(NAME).buttons.x, (event) => {
-                this.settings.set(['offset', 'x'], event.target.value);
+                this.settings.set('offset', 'x', event.target.value);
                 event.target.nextSibling.setAttribute('data-after', event.target.value);
                 this.drawPolygons();
             }, this.settings.get('offset', 'x'), -20, 20, 0.1);
             offsetX.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'x'));
             let offsetY = fsKeys.addRange('offset-y', WMEUI.t(NAME).buttons.y, (event) => {
-                this.settings.set(['offset', 'y'], event.target.value);
+                this.settings.set('offset', 'y', event.target.value);
                 event.target.nextSibling.setAttribute('data-after', event.target.value);
                 this.drawPolygons();
             }, this.settings.get('offset', 'y'), -20, 20, 0.1);
@@ -253,7 +253,7 @@
                 eventHandler: (e) => {
                     if (e.name === this.name) {
                         this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: e.checked });
-                        this.settings.set(['layer'], e.checked);
+                        this.settings.set('layer', e.checked);
                         if (e.checked) {
                             this.loadPolygons();
                         }
