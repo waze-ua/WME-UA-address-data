@@ -1,4 +1,4 @@
-import { NAME } from './translations'
+import { NAME } from './name'
 
 export function displayHtmlPage (res) {
   if (res.responseText.match(/Authorization needed/)

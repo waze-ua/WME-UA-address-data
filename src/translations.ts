@@ -1,7 +1,6 @@
-export const requestsTimeout = 10000 // in ms
+import { NAME } from './name'
 
-// Script name, used as a unique identifier
-export const NAME = 'Address Polygons'
+export const requestsTimeout = 10000 // in ms
 
 export const SETTINGS = {
   offset: {

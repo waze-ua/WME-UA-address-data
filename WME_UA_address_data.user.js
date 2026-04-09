@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.04.02.001
+// @version      2026.04.09.002
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -10,10 +10,11 @@
 // @connect      google.com
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
-// @require      https://update.greasyfork.org/scripts/389765/1785927/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1785943/WME-Bootstrap.js
-// @require      https://update.greasyfork.org/scripts/450221/1785960/WME-Base.js
-// @require      https://update.greasyfork.org/scripts/450320/1785964/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/389765/1794584/CommonUtils.js
+// @require      https://update.greasyfork.org/scripts/450160/1792042/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450221/1793261/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450320/1794414/WME-UI.js
+// @require      https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js
 // @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
 // @updateURL    https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
 // @downloadURL  https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
@@ -24,9 +25,9 @@
 (function () {
     'use strict';
 
-    const requestsTimeout = 10000; // in ms
-    // Script name, used as a unique identifier
     const NAME = 'Address Polygons';
+
+    const requestsTimeout = 10000; // in ms
     const SETTINGS = {
         offset: {
             x: 4,
@@ -155,77 +156,74 @@
             this.polygons = null;
             this.tabOptions = {
                 showPolygonName: {
-                    title: I18n.t(this.name).options.showPolygonName,
-                    description: I18n.t(this.name).options.showPolygonName,
+                    title: WMEUI.t(NAME).options.showPolygonName,
+                    description: WMEUI.t(NAME).options.showPolygonName,
                     callback: (event) => {
-                        this.settings.set(['options', 'showPolygonName'], event.target.checked);
+                        this.settings.set('options', 'showPolygonName', event.target.checked);
                         this.drawPolygons();
                     }
                 },
                 showRegionName: {
-                    title: I18n.t(this.name).options.showRegionName,
-                    description: I18n.t(this.name).options.showRegionName,
+                    title: WMEUI.t(NAME).options.showRegionName,
+                    description: WMEUI.t(NAME).options.showRegionName,
                     callback: (event) => {
-                        this.settings.set(['options', 'showRegionName'], event.target.checked);
+                        this.settings.set('options', 'showRegionName', event.target.checked);
                         this.drawPolygons();
                     }
                 },
                 fillPolygons: {
-                    title: I18n.t(this.name).options.fillPolygons,
-                    description: I18n.t(this.name).options.fillPolygons,
+                    title: WMEUI.t(NAME).options.fillPolygons,
+                    description: WMEUI.t(NAME).options.fillPolygons,
                     callback: (event) => {
-                        this.settings.set(['options', 'fillPolygons'], event.target.checked);
+                        this.settings.set('options', 'fillPolygons', event.target.checked);
                         this.drawPolygons();
                     }
                 }
             };
-            this.initHelper();
             this.initTab();
             this.initLayer();
             this.initHandlers();
-            this.createShortcut();
-        }
-        initHelper() {
-            this.helper = new WMEUIHelper(this.name);
+            this.initShortcuts();
         }
         initTab() {
             /** @type {WMEUIHelperTab} */
-            let tab = this.helper.createTab(I18n.t(this.name).title, {
+            let tab = this.helper.createTab(WMEUI.t(NAME).title, {
                 sidebar: this.wmeSDK.Sidebar,
                 image: GM_info.script.icon
             });
-            tab.addText('description', I18n.t(this.name).description);
+            tab.addText('description', WMEUI.t(NAME).description);
             // Add settings section
-            let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings);
+            let fsSettings = this.helper.createFieldset(WMEUI.t(NAME).settings);
             let options = this.settings.get('options');
+            let checkboxes = {};
             for (let item in options) {
                 if (options.hasOwnProperty(item) && this.tabOptions[item]) {
-                    fsSettings.addCheckbox('settings-' + item, this.tabOptions[item].title, this.tabOptions[item].callback, this.settings.get('options', item));
+                    checkboxes['settings-' + item] = {
+                        title: this.tabOptions[item].title,
+                        callback: this.tabOptions[item].callback,
+                        checked: this.settings.get('options', item),
+                    };
                 }
             }
+            fsSettings.addCheckboxes(checkboxes);
             tab.addElement(fsSettings);
             /**
              * @type {WMEUIHelperControlInput}
              */
-            let fsKeys = this.helper.createFieldset(I18n.t(this.name).buttons.control);
-            let offsetX = fsKeys.addRange('offset-x', I18n.t(this.name).buttons.x, (event) => {
-                this.settings.set(['offset', 'x'], event.target.value);
-                event.target.nextSibling.setAttribute('data-after', event.target.value);
+            let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).buttons.control);
+            fsKeys.addRange('offset-x', WMEUI.t(NAME).buttons.x, (event) => {
+                this.settings.set('offset', 'x', event.target.value);
                 this.drawPolygons();
             }, this.settings.get('offset', 'x'), -20, 20, 0.1);
-            offsetX.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'x'));
-            let offsetY = fsKeys.addRange('offset-y', I18n.t(this.name).buttons.y, (event) => {
-                this.settings.set(['offset', 'y'], event.target.value);
-                event.target.nextSibling.setAttribute('data-after', event.target.value);
+            fsKeys.addRange('offset-y', WMEUI.t(NAME).buttons.y, (event) => {
+                this.settings.set('offset', 'y', event.target.value);
                 this.drawPolygons();
             }, this.settings.get('offset', 'y'), -20, 20, 0.1);
-            offsetY.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'y'));
             tab.addElement(fsKeys);
             tab.addText('info', '<a href="' + GM_info.scriptUpdateURL + '">' + GM_info.script.name + '</a> ' + GM_info.script.version);
             tab.addText('blue', 'made in');
             tab.addText('yellow', 'Ukraine');
             tab.inject().then(() => this.log('Script Tab Initialized'));
-            this.refreshOffset();
         }
         /**
          * Initial the layer: set visibility to true and add the checkbox for this layer
@@ -234,9 +232,9 @@
             this.wmeSDK.Map.addLayer({
                 layerName: this.name,
                 styleRules: layerConfig.defaultRule.styleRules,
-                styleContext: layerConfig.defaultRule.styleContext
+                styleContext: layerConfig.defaultRule.styleContext,
+                zIndex: 100,
             });
-            this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 100 });
             this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer') });
             this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
             this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: this.settings.get('layer') });
@@ -251,7 +249,7 @@
                 eventHandler: (e) => {
                     if (e.name === this.name) {
                         this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: e.checked });
-                        this.settings.set(['layer'], e.checked);
+                        this.settings.set('layer', e.checked);
                         if (e.checked) {
                             this.loadPolygons();
                         }
@@ -279,18 +277,8 @@
         /**
          * Create the shortcut
          */
-        createShortcut() {
-            let shortcut = {
-                callback: () => this.togglePolygons(),
-                description: I18n.t(this.name).description,
-                shortcutId: this.id,
-                shortcutKeys: 'S+81',
-            };
-            if (this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
-                this.log('Shortcut already in use');
-                shortcut.shortcutKeys = null;
-            }
-            this.wmeSDK.Shortcuts.createShortcut(shortcut);
+        initShortcuts() {
+            this.createShortcut('toggle', WMEUI.t(NAME).description, 'S+81', () => this.togglePolygons());
         }
         /**
          * @return {[]}
@@ -372,10 +360,6 @@
             else {
                 this.loadPolygons();
             }
-        }
-        refreshOffset() {
-            document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'));
-            document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'));
         }
         /**
          * Translates an array of [lon, lat] coordinates by an offset defined in meters.
@@ -483,11 +467,11 @@
         }
     }
 
-    var css_248z = ".address-polygons legend {\n  font-size: 14px;\n  font-weight: bold;\n  margin: 0px 0px 10px 0px;\n  padding: 10px 0px 0px 0px;\n}\n\n.address-polygons > .control-label {\n  font-size: 14px;\n  font-weight: bold;\n  margin: 0px 0px 10px 0px;\n  padding: 10px 0px 0px 0px;\n}\n\n.address-polygons > .controls > fieldset {\n  border: 1px solid #ddd;\n  padding: 4px;\n}\n\n.address-polygons .address-polygons-offset-x label,\n.address-polygons .address-polygons-offset-y label {\n  font-weight: 400;\n}\n\n.address-polygons .address-polygons-offset-x label::after {\n  content: attr(data-after);\n  display: inline-block;\n  padding: 2px;\n  margin: 2px;\n}\n\n.address-polygons .address-polygons-offset-y label::after {\n  content: attr(data-after);\n  display: inline-block;\n  padding: 2px;\n  margin: 2px;\n}\n.address-polygons .button-toolbar {\n  padding: 8px;\n}\np.address-polygons-info {\n  border-top: 1px solid #ccc;\n  color: #777;\n  font-size: x-small;\n  margin-top: 15px;\n  padding-top: 10px;\n  text-align: center;\n}\n\n#sidebar p.address-polygons-blue {\n  background-color: #0057B8;\n  color: white;\n  height: 32px;\n  text-align: center;\n  line-height: 32px;\n  font-size: 24px;\n  margin: 0;\n}\n\n#sidebar p.address-polygons-yellow {\n  background-color: #FFDD00;\n  color: black;\n  height: 32px;\n  text-align: center;\n  line-height: 32px;\n  font-size: 24px;\n  margin: 0;\n}\n";
+    var css_248z = "p.address-polygons-info {\n    border-top: 1px solid #ccc;\n    color: #777;\n    font-size: x-small;\n    margin-top: 15px;\n    padding-top: 10px;\n    text-align: center;\n}\n\n#sidebar p.address-polygons-blue {\n    background-color: #0057B8;\n    color: white;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n\n#sidebar p.address-polygons-yellow {\n    background-color: #FFDD00;\n    color: black;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n";
 
-    WMEUI.addTranslation(NAME, TRANSLATION);
-    WMEUI.addStyle(css_248z);
     $(document).on('bootstrap.wme', () => {
+        WMEUI.addTranslation(NAME, TRANSLATION);
+        WMEUI.addStyle(css_248z);
         new UAAddressData(NAME, SETTINGS);
     });
 

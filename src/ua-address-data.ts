@@ -1,11 +1,11 @@
-import { NAME, SETTINGS, requestsTimeout } from './translations'
+import { NAME } from './name'
+import { SETTINGS, requestsTimeout } from './translations'
 import { layerConfig } from './layers'
 import { displayHtmlPage } from './helpers'
 
 export class UAAddressData extends WMEBase {
   polygons: any
   tabOptions: any
-  helper: any
 
   constructor (name, settings) {
     super(name, settings)
@@ -14,32 +14,30 @@ export class UAAddressData extends WMEBase {
 
     this.tabOptions = {
       showPolygonName: {
-        title: I18n.t(this.name).options.showPolygonName,
-        description: I18n.t(this.name).options.showPolygonName,
+        title: WMEUI.t(NAME).options.showPolygonName,
+        description: WMEUI.t(NAME).options.showPolygonName,
         callback: (event) => {
-          this.settings.set(['options', 'showPolygonName'], event.target.checked)
+          this.settings.set('options', 'showPolygonName', event.target.checked)
           this.drawPolygons()
         }
       },
       showRegionName: {
-        title: I18n.t(this.name).options.showRegionName,
-        description: I18n.t(this.name).options.showRegionName,
+        title: WMEUI.t(NAME).options.showRegionName,
+        description: WMEUI.t(NAME).options.showRegionName,
         callback: (event) => {
-          this.settings.set(['options', 'showRegionName'], event.target.checked)
+          this.settings.set('options', 'showRegionName', event.target.checked)
           this.drawPolygons()
         }
       },
       fillPolygons: {
-        title: I18n.t(this.name).options.fillPolygons,
-        description: I18n.t(this.name).options.fillPolygons,
+        title: WMEUI.t(NAME).options.fillPolygons,
+        description: WMEUI.t(NAME).options.fillPolygons,
         callback: (event) => {
-          this.settings.set(['options', 'fillPolygons'], event.target.checked)
+          this.settings.set('options', 'fillPolygons', event.target.checked)
           this.drawPolygons()
         }
       }
     }
-
-    this.initHelper()
 
     this.initTab()
 
@@ -47,50 +45,46 @@ export class UAAddressData extends WMEBase {
 
     this.initHandlers()
 
-    this.createShortcut()
-  }
-
-  initHelper() {
-    this.helper = new WMEUIHelper(this.name)
+    this.initShortcuts()
   }
 
   initTab () {
     /** @type {WMEUIHelperTab} */
     let tab = this.helper.createTab(
-      I18n.t(this.name).title,
+      WMEUI.t(NAME).title,
       {
         sidebar: this.wmeSDK.Sidebar,
         image: GM_info.script.icon
       }
     )
-    tab.addText('description', I18n.t(this.name).description)
+    tab.addText('description', WMEUI.t(NAME).description)
 
     // Add settings section
-    let fsSettings = this.helper.createFieldset(I18n.t(this.name).settings)
+    let fsSettings = this.helper.createFieldset(WMEUI.t(NAME).settings)
     let options = this.settings.get('options')
+    let checkboxes: Record<string, any> = {}
     for (let item in options) {
       if (options.hasOwnProperty(item) && this.tabOptions[item]) {
-        fsSettings.addCheckbox(
-          'settings-' + item,
-          this.tabOptions[item].title,
-          this.tabOptions[item].callback,
-          this.settings.get('options', item)
-        )
+        checkboxes['settings-' + item] = {
+          title: this.tabOptions[item].title,
+          callback: this.tabOptions[item].callback,
+          checked: this.settings.get('options', item),
+        }
       }
     }
+    fsSettings.addCheckboxes(checkboxes)
     tab.addElement(fsSettings)
 
     /**
      * @type {WMEUIHelperControlInput}
      */
-    let fsKeys = this.helper.createFieldset(I18n.t(this.name).buttons.control)
+    let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).buttons.control)
 
-    let offsetX = fsKeys.addRange(
+    fsKeys.addRange(
       'offset-x',
-      I18n.t(this.name).buttons.x,
+      WMEUI.t(NAME).buttons.x,
       (event) => {
-        this.settings.set(['offset', 'x'], event.target.value)
-        event.target.nextSibling.setAttribute('data-after', event.target.value)
+        this.settings.set('offset', 'x', event.target.value)
         this.drawPolygons()
       },
       this.settings.get('offset', 'x'),
@@ -98,14 +92,12 @@ export class UAAddressData extends WMEBase {
       20,
       0.1
     )
-    offsetX.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'x'))
 
-    let offsetY = fsKeys.addRange(
+    fsKeys.addRange(
       'offset-y',
-      I18n.t(this.name).buttons.y,
+      WMEUI.t(NAME).buttons.y,
       (event) => {
-        this.settings.set(['offset', 'y'], event.target.value)
-        event.target.nextSibling.setAttribute('data-after', event.target.value)
+        this.settings.set('offset', 'y', event.target.value)
         this.drawPolygons()
       },
       this.settings.get('offset', 'y'),
@@ -113,7 +105,6 @@ export class UAAddressData extends WMEBase {
       20,
       0.1
     )
-    offsetY.html().getElementsByTagName('label')[0].setAttribute('data-after', this.settings.get('offset', 'y'))
 
     tab.addElement(fsKeys)
 
@@ -125,7 +116,6 @@ export class UAAddressData extends WMEBase {
     tab.addText('yellow', 'Ukraine')
     tab.inject().then(() => this.log('Script Tab Initialized') )
 
-    this.refreshOffset()
   }
 
   /**
@@ -135,10 +125,9 @@ export class UAAddressData extends WMEBase {
     this.wmeSDK.Map.addLayer({
       layerName: this.name,
       styleRules: layerConfig.defaultRule.styleRules,
-      styleContext: layerConfig.defaultRule.styleContext
+      styleContext: layerConfig.defaultRule.styleContext,
+      zIndex: 100,
     });
-
-    this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 100 });
     this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer')});
 
     this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
@@ -157,7 +146,7 @@ export class UAAddressData extends WMEBase {
       eventHandler: (e) => {
         if (e.name === this.name) {
           this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: e.checked });
-          this.settings.set(['layer'], e.checked)
+          this.settings.set('layer', e.checked)
           if (e.checked) {
             this.loadPolygons()
           }
@@ -188,19 +177,8 @@ export class UAAddressData extends WMEBase {
   /**
    * Create the shortcut
    */
-  createShortcut () {
-    let shortcut = {
-      callback: () => this.togglePolygons(),
-      description: I18n.t(this.name).description,
-      shortcutId: this.id,
-      shortcutKeys: 'S+81',
-    };
-
-    if (this.wmeSDK.Shortcuts.areShortcutKeysInUse({ shortcutKeys: shortcut.shortcutKeys })) {
-      this.log('Shortcut already in use')
-      shortcut.shortcutKeys = null
-    }
-    this.wmeSDK.Shortcuts.createShortcut(shortcut);
+  initShortcuts () {
+    this.createShortcut('toggle', WMEUI.t(NAME).description, 'S+81', () => this.togglePolygons())
   }
 
   /**
@@ -307,11 +285,6 @@ export class UAAddressData extends WMEBase {
     } else {
       this.loadPolygons()
     }
-  }
-
-  refreshOffset () {
-    document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'))
-    document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'))
   }
 
   /**

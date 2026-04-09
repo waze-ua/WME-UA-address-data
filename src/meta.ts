@@ -10,10 +10,11 @@
 // @connect      google.com
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
-// @require      https://update.greasyfork.org/scripts/389765/1785927/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1785943/WME-Bootstrap.js
-// @require      https://update.greasyfork.org/scripts/450221/1785960/WME-Base.js
-// @require      https://update.greasyfork.org/scripts/450320/1785964/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/389765/1794584/CommonUtils.js
+// @require      https://update.greasyfork.org/scripts/450160/1792042/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450221/1793261/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450320/1794414/WME-UI.js
+// @require      https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js
 // @require      https://cdn.jsdelivr.net/npm/wellknown@0.5.0/wellknown.min.js
 // @updateURL    https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
 // @downloadURL  https://github.com/waze-ua/WME-UA-address-data/raw/main/WME_UA_address_data.user.js
