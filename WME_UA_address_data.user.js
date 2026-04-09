@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME UA-address data
-// @version      2026.04.08.001
+// @version      2026.04.09.002
 // @description  Shows polygons and addresses on a map in different locations
 // @namespace    https://greasyfork.org/users/160654-waze-ukraine
 // @author       madnut, Sapozhnik, Anton Shevchuk
@@ -10,7 +10,7 @@
 // @connect      google.com
 // @connect      script.googleusercontent.com
 // @grant        GM_xmlhttpRequest
-// @require      https://update.greasyfork.org/scripts/389765/1793258/CommonUtils.js
+// @require      https://update.greasyfork.org/scripts/389765/1794584/CommonUtils.js
 // @require      https://update.greasyfork.org/scripts/450160/1792042/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/450221/1793261/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1794414/WME-UI.js
@@ -224,7 +224,6 @@
             tab.addText('blue', 'made in');
             tab.addText('yellow', 'Ukraine');
             tab.inject().then(() => this.log('Script Tab Initialized'));
-            this.refreshOffset();
         }
         /**
          * Initial the layer: set visibility to true and add the checkbox for this layer
@@ -233,9 +232,9 @@
             this.wmeSDK.Map.addLayer({
                 layerName: this.name,
                 styleRules: layerConfig.defaultRule.styleRules,
-                styleContext: layerConfig.defaultRule.styleContext
+                styleContext: layerConfig.defaultRule.styleContext,
+                zIndex: 100,
             });
-            this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 100 });
             this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer') });
             this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
             this.wmeSDK.LayerSwitcher.setLayerCheckboxChecked({ name: this.name, isChecked: this.settings.get('layer') });
@@ -362,10 +361,6 @@
                 this.loadPolygons();
             }
         }
-        refreshOffset() {
-            document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'));
-            document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'));
-        }
         /**
          * Translates an array of [lon, lat] coordinates by an offset defined in meters.
          *
@@ -472,7 +467,7 @@
         }
     }
 
-    var css_248z = ".address-polygons legend {\n    font-size: 14px;\n    font-weight: bold;\n    margin: 0 0 10px 0;\n    padding: 10px 0 0 0;\n}\n\n.address-polygons > .control-label {\n    font-size: 14px;\n    font-weight: bold;\n    margin: 0 0 10px 0;\n    padding: 10px 0 0 0;\n}\n\n.address-polygons > .wme-ui-fieldset-content > fieldset {\n    border: 1px solid #ddd;\n    padding: 4px;\n}\n\n\n.address-polygons .wme-ui-tab-content {\n    padding: 8px;\n}\n\np.address-polygons-info {\n    border-top: 1px solid #ccc;\n    color: #777;\n    font-size: x-small;\n    margin-top: 15px;\n    padding-top: 10px;\n    text-align: center;\n}\n\n#sidebar p.address-polygons-blue {\n    background-color: #0057B8;\n    color: white;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n\n#sidebar p.address-polygons-yellow {\n    background-color: #FFDD00;\n    color: black;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n";
+    var css_248z = "p.address-polygons-info {\n    border-top: 1px solid #ccc;\n    color: #777;\n    font-size: x-small;\n    margin-top: 15px;\n    padding-top: 10px;\n    text-align: center;\n}\n\n#sidebar p.address-polygons-blue {\n    background-color: #0057B8;\n    color: white;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n\n#sidebar p.address-polygons-yellow {\n    background-color: #FFDD00;\n    color: black;\n    height: 32px;\n    text-align: center;\n    line-height: 32px;\n    font-size: 24px;\n    margin: 0;\n}\n";
 
     $(document).on('bootstrap.wme', () => {
         WMEUI.addTranslation(NAME, TRANSLATION);

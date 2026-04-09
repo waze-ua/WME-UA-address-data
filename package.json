@@ -1,6 +1,6 @@
 {
   "name": "wme-ua-address-data",
-  "version": "2026.04.08.001",
+  "version": "2026.04.09.002",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w"

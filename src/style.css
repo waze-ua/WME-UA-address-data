@@ -1,27 +1,3 @@
-.address-polygons legend {
-    font-size: 14px;
-    font-weight: bold;
-    margin: 0 0 10px 0;
-    padding: 10px 0 0 0;
-}
-
-.address-polygons > .control-label {
-    font-size: 14px;
-    font-weight: bold;
-    margin: 0 0 10px 0;
-    padding: 10px 0 0 0;
-}
-
-.address-polygons > .wme-ui-fieldset-content > fieldset {
-    border: 1px solid #ddd;
-    padding: 4px;
-}
-
-
-.address-polygons .wme-ui-tab-content {
-    padding: 8px;
-}
-
 p.address-polygons-info {
     border-top: 1px solid #ccc;
     color: #777;

@@ -1,4 +1,5 @@
-import { NAME, TRANSLATION, SETTINGS } from './translations'
+import { NAME } from './name'
+import { TRANSLATION, SETTINGS } from './translations'
 import { UAAddressData } from './ua-address-data'
 import css from './style.css'
 

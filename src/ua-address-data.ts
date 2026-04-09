@@ -1,4 +1,5 @@
-import { NAME, SETTINGS, requestsTimeout } from './translations'
+import { NAME } from './name'
+import { SETTINGS, requestsTimeout } from './translations'
 import { layerConfig } from './layers'
 import { displayHtmlPage } from './helpers'
 
@@ -115,7 +116,6 @@ export class UAAddressData extends WMEBase {
     tab.addText('yellow', 'Ukraine')
     tab.inject().then(() => this.log('Script Tab Initialized') )
 
-    this.refreshOffset()
   }
 
   /**
@@ -125,10 +125,9 @@ export class UAAddressData extends WMEBase {
     this.wmeSDK.Map.addLayer({
       layerName: this.name,
       styleRules: layerConfig.defaultRule.styleRules,
-      styleContext: layerConfig.defaultRule.styleContext
+      styleContext: layerConfig.defaultRule.styleContext,
+      zIndex: 100,
     });
-
-    this.wmeSDK.Map.setLayerZIndex({ layerName: this.name, zIndex: 100 });
     this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: this.settings.get('layer')});
 
     this.wmeSDK.LayerSwitcher.addLayerCheckbox({ name: this.name });
@@ -286,11 +285,6 @@ export class UAAddressData extends WMEBase {
     } else {
       this.loadPolygons()
     }
-  }
-
-  refreshOffset () {
-    document.querySelector('.address-polygons-offset-x label')?.setAttribute('data-after', this.settings.get('offset', 'x'))
-    document.querySelector('.address-polygons-offset-y label')?.setAttribute('data-after', this.settings.get('offset', 'y'))
   }
 
   /**
